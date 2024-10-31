@@ -22,6 +22,7 @@ import { decrypt, encrypt } from '@/src/types/utils';
 import HeaderLayout from '@/src/components/header/Header';
 import { remoteUrl } from '@/src/types/constant';
 import { io, Socket } from 'socket.io-client';
+import MessageItem from './MessageItem';
 
 const ChatDetail = ({ route, navigation }: any) => {
   const item: ConversationModel = route.params?.item;
@@ -73,6 +74,33 @@ const ChatDetail = ({ route, navigation }: any) => {
     } catch (error) {
       console.error("Error fetching message data:", error);
     }
+  };
+
+  const fetchUpdateMessage = async (messageId : string) => {
+    try {
+      // Encrypt the updated message content
+      const res = await get(`/v1/message/get/${messageId}`);
+      const updatedMessage = res.data;
+      
+      // Update the messages state with the new message
+      setMessages((prevMessages) => {
+        const index = prevMessages.findIndex((msg) => msg._id === messageId);
+        if (index !== -1) {
+          const newMessages = [...prevMessages];
+          newMessages[index] = updatedMessage;
+          return newMessages;
+        }
+        return prevMessages;
+      });
+    } catch (error) {
+      console.error('Lỗi mạng!', error);
+    }
+  };
+
+  const fetchDeleteMessage = async (messageId: string) => {
+    setMessages((prevMessages) =>
+      prevMessages.filter((message) => message._id !== messageId)
+    );
   };
 
   const fetchMessages = async (pageNumber: number) => {
@@ -130,18 +158,13 @@ const ChatDetail = ({ route, navigation }: any) => {
       await fetchNewMessage(messageId)
     });
 
-    socket.on('UPDATE_MESSAGE', (updatedMessage: MessageModel) => {
-      // setMessages(prevMessages => 
-      //   prevMessages.map(msg => 
-      //     msg._id === updatedMessage._id ? updatedMessage : msg
-      //   )
-      // );
+    socket.on('UPDATE_MESSAGE', async (messageId: string) => {
+      console.log('UPDATE MESSAGE')
+      await fetchUpdateMessage(messageId)
     });
 
     socket.on('DELETE_MESSAGE', (messageId: string) => {
-      // setMessages(prevMessages => 
-      //   prevMessages.filter(msg => msg._id !== messageId)
-      // );
+      fetchDeleteMessage(messageId)
     });
 
     socketRef.current = socket;
@@ -165,39 +188,16 @@ const ChatDetail = ({ route, navigation }: any) => {
   };
 
   const renderMessage = ({ item }: { item: MessageModel }) => {
-    const isMyMessage = item.isOwner;
-
     return (
-      <View style={[
-        styles.messageContainer,
-        isMyMessage ? styles.myMessage : styles.otherMessage
-      ]}>
-        {!isMyMessage && (
-          <Image
-            source={item.user.avatarUrl ? { uri: item.user.avatarUrl } : defaultUserImg}
-            style={styles.messageAvatar}
-          />
-        )}
-        <View style={[
-          styles.messageBubble,
-          isMyMessage ? styles.myMessageBubble : styles.otherMessageBubble
-        ]}>
-          {!isMyMessage && (
-            <Text style={styles.senderName}>{item.user.displayName}</Text>
-          )}
-          <Text style={[
-            styles.messageText,
-            isMyMessage ? styles.myMessageText : styles.otherMessageText
-          ]}>
-            {decrypt(item.content, user.secretKey)}
-          </Text>
-          <Text style={styles.messageTime}>
-            {item.createdAt}
-          </Text>
-        </View>
-      </View>
+      <MessageItem
+        item={item}
+        userSecretKey={user.secretKey}
+        onItemUpdate={() => {}} //Socket
+        onItemDelete={() => {}} //Socket
+        navigation={navigation}
+      />
     );
-  };
+  }
 
   return (
     <KeyboardAvoidingView

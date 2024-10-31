@@ -238,7 +238,7 @@ const PostCommentItem = ({
           <Ionicons name="ellipsis-horizontal" size={20} color="#7f8c8d" />
         </TouchableOpacity>
       )}
-
+  
       <ModalSingleImageComponent
         imageUri={item.imageUrl}
         isVisible={isModalImageVisible}
