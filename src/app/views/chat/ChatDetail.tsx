@@ -18,7 +18,11 @@ import { MessageModel } from '@/src/models/chat/MessageModel';
 import defaultUserImg from '../../../assets/user_icon.png';
 import { ConversationModel } from '@/src/models/chat/ConversationModel';
 import { UserModel } from '@/src/models/user/UserModel';
-import { encrypt } from '@/src/types/utils';
+import { decrypt, encrypt } from '@/src/types/utils';
+import HeaderLayout from '@/src/components/header/Header';
+import { remoteUrl } from '@/src/types/constant';
+import { io, Socket } from 'socket.io-client';
+import MessageItem from './MessageItem';
 
 const ChatDetail = ({ route, navigation }: any) => {
   const item: ConversationModel = route.params?.item;
@@ -31,7 +35,8 @@ const ChatDetail = ({ route, navigation }: any) => {
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
   const flatListRef = useRef<FlatList>(null);
-  const size = 20;
+  const socketRef = useRef<Socket | null>(null);
+  const size = 10;
 
   useEffect(() => {
     navigation.setOptions({
@@ -46,7 +51,57 @@ const ChatDetail = ({ route, navigation }: any) => {
       ),
     });
     fetchMessages(0);
+
+    initializeSocket();
+
+    return () => {
+      if (socketRef.current) {
+        // Leave conversation before disconnecting
+        socketRef.current.emit('LEAVE_CONVERSATION', item._id);
+        socketRef.current.disconnect();
+      }
+    };
   }, []);
+
+  const fetchNewMessage = async (messageId: string) => {
+    try {
+      const res = await get(`/v1/message/get/${messageId}`);
+      const newMessage = res.data;
+      setMessages(prevMessages => [newMessage, ...prevMessages]);
+      if (newMessage.isOwner) {
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      }
+    } catch (error) {
+      console.error("Error fetching message data:", error);
+    }
+  };
+
+  const fetchUpdateMessage = async (messageId : string) => {
+    try {
+      // Encrypt the updated message content
+      const res = await get(`/v1/message/get/${messageId}`);
+      const updatedMessage = res.data;
+      
+      // Update the messages state with the new message
+      setMessages((prevMessages) => {
+        const index = prevMessages.findIndex((msg) => msg._id === messageId);
+        if (index !== -1) {
+          const newMessages = [...prevMessages];
+          newMessages[index] = updatedMessage;
+          return newMessages;
+        }
+        return prevMessages;
+      });
+    } catch (error) {
+      console.error('Lỗi mạng!', error);
+    }
+  };
+
+  const fetchDeleteMessage = async (messageId: string) => {
+    setMessages((prevMessages) =>
+      prevMessages.filter((message) => message._id !== messageId)
+    );
+  };
 
   const fetchMessages = async (pageNumber: number) => {
     try {
@@ -55,7 +110,8 @@ const ChatDetail = ({ route, navigation }: any) => {
         size,
         conversation: item._id,
       });
-      console.log('Messages:', res.data.content);
+
+
       const newMessages = res.data.content;
       if (pageNumber === 0) {
         setMessages([...newMessages]);
@@ -80,21 +136,50 @@ const ChatDetail = ({ route, navigation }: any) => {
     }
   };
 
+  const initializeSocket = () => {
+    const socket = io(remoteUrl, {
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 3000
+    });
+
+    socket.on('connect', () => {
+      console.log('Socket.IO Connected');
+      // Join conversation room on connect
+      socket.emit('JOIN_CONVERSATION', item._id);
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('Socket.IO Disconnected:', reason);
+    });
+
+    socket.on('CREATE_MESSAGE', async (messageId: string) => {
+      await fetchNewMessage(messageId)
+    });
+
+    socket.on('UPDATE_MESSAGE', async (messageId: string) => {
+      console.log('UPDATE MESSAGE')
+      await fetchUpdateMessage(messageId)
+    });
+
+    socket.on('DELETE_MESSAGE', (messageId: string) => {
+      fetchDeleteMessage(messageId)
+    });
+
+    socketRef.current = socket;
+  };
+
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
+    let messageEncrypt = encrypt(inputMessage.trim(), user.secretKey);
     const messageData = {
-      content: inputMessage.trim(),
-      conversationId: item._id,
+      content: messageEncrypt,
+      conversation: item._id,
     };
-
     try {
-      setLoadingDialog(true);
-      console.log('Encrypting message:', user.secretKey);
-      let strDecrypt = encrypt("1231", user.secretKey);
-      console.log(strDecrypt)
-      // const res = await post('/v1/message/create', messageData);
-      // setMessages(prev => [res.data, ...prev]);
       setInputMessage('');
+      await post('/v1/message/create', messageData);
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
@@ -103,39 +188,16 @@ const ChatDetail = ({ route, navigation }: any) => {
   };
 
   const renderMessage = ({ item }: { item: MessageModel }) => {
-    const isMyMessage = item.isOwner;
-
     return (
-      <View style={[
-        styles.messageContainer,
-        isMyMessage ? styles.myMessage : styles.otherMessage
-      ]}>
-        {!isMyMessage && (
-          <Image
-            source={item.user.avatarUrl ? { uri: item.user.avatarUrl } : defaultUserImg}
-            style={styles.messageAvatar}
-          />
-        )}
-        <View style={[
-          styles.messageBubble,
-          isMyMessage ? styles.myMessageBubble : styles.otherMessageBubble
-        ]}>
-          {!isMyMessage && (
-            <Text style={styles.senderName}>{item.user.displayName}</Text>
-          )}
-          <Text style={[
-            styles.messageText,
-            isMyMessage ? styles.myMessageText : styles.otherMessageText
-          ]}>
-            {item.content}
-          </Text>
-          <Text style={styles.messageTime}>
-            {item.createdAt}
-          </Text>
-        </View>
-      </View>
+      <MessageItem
+        item={item}
+        userSecretKey={user.secretKey}
+        onItemUpdate={() => {}} //Socket
+        onItemDelete={() => {}} //Socket
+        navigation={navigation}
+      />
     );
-  };
+  }
 
   return (
     <KeyboardAvoidingView
@@ -144,6 +206,15 @@ const ChatDetail = ({ route, navigation }: any) => {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       {loadingDialog && <LoadingDialog isVisible={loadingDialog} />}
+
+      <HeaderLayout 
+        title={item.name}
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
+        RightIcon={item.canAddMember && item.kind === 1 ? Plus : undefined}
+        onRightIconPress={() => item.canAddMember && item.kind === 1 && navigation.navigate('AddMember', {item})}
+        titleLeft={true}
+      />
 
       <FlatList
         ref={flatListRef}
@@ -163,7 +234,7 @@ const ChatDetail = ({ route, navigation }: any) => {
         contentContainerStyle={styles.flatListContent}
       />
 
-      {item.canMessage && (
+      {(item.canMessage == 1 && item.kind == 1) || (item.kind == 2) ? (
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
@@ -183,7 +254,7 @@ const ChatDetail = ({ route, navigation }: any) => {
             />
           </TouchableOpacity>
         </View>
-      )}
+      ) : null}
     </KeyboardAvoidingView>
   );
 };

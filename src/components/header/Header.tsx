@@ -8,19 +8,37 @@ const HeaderLayout = ({
   onRightIconPress,
   showBackButton,
   onBackPress,
+  titleLeft = false
 }: any) => {
   return (
     <View style={styles.container}>
-      <View style={styles.leftContainer}>
+      <View style={[
+        styles.leftContainer,
+        titleLeft && styles.leftContainerWithTitle
+      ]}>
         {showBackButton && (
           <TouchableOpacity onPress={onBackPress} style={styles.backButton}>
             <ChevronLeft color="#fff" size={24} />
           </TouchableOpacity>
         )}
+        {titleLeft && (
+          <Text 
+            style={[
+              styles.title,
+              styles.leftTitle,
+              showBackButton && styles.titleWithBack
+            ]}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+        )}
       </View>
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>{title}</Text>
-      </View>
+      {!titleLeft && (
+        <View style={styles.titleContainer}>
+          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+        </View>
+      )}
       <View style={styles.rightContainer}>
         {RightIcon && (
           <TouchableOpacity
@@ -49,6 +67,11 @@ const styles = StyleSheet.create({
   leftContainer: {
     flex: 1,
     alignItems: "flex-start",
+    flexDirection: "row",
+  },
+  leftContainerWithTitle: {
+    flex: 2,
+    alignItems: "center",
   },
   titleContainer: {
     flex: 2,
@@ -57,12 +80,18 @@ const styles = StyleSheet.create({
   rightContainer: {
     flex: 1,
     alignItems: "flex-end",
-    
   },
   title: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#fff",
+  },
+  leftTitle: {
+    textAlign: "left",
+    marginLeft: 4,
+  },
+  titleWithBack: {
+    marginLeft: 8,
   },
   backButton: {
     padding: 8,

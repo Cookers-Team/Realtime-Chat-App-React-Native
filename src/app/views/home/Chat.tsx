@@ -17,6 +17,7 @@ import defaultUserImg from "../../../assets/user_icon.png";
 import { ConversationModel } from "@/src/models/chat/ConversationModel";
 import { MessageModel } from "@/src/models/chat/MessageModel";
 import { UserModel } from "@/src/models/user/UserModel";
+import { decrypt } from "@/src/types/utils";
 
 const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
   const { get, loading } = useFetch();
@@ -27,17 +28,23 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [page, setPage] = useState(0);
   const [user, setUser] = useState<UserModel>();
+  const [secretKey, setSecretKey] = useState("");
   const size = 10;
 
   useEffect(() => {
-    fetchUserData();
-    fetchData(0);
+    fetch();
   }, []);
 
+  const fetch = async () => {
+    const key = await fetchUserData();
+    await getChatsFirst(0, "", key);
+  };
   const fetchUserData = async () => {
     try {
       const res = await get("/v1/user/profile");
+      setSecretKey(res.data.secretKey);
       setUser(res.data);
+      return res.data.secretKey;
     } catch (error) {
       console.error("Error fetching user data:", error);
     }
@@ -61,9 +68,48 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
       const res = await get(`/v1/conversation/list`, {
         page: pageNumber,
         size,
-        name: content
+        name: content,
       });
       const newChats = res.data.content;
+      console.log('secretKey in chat: ' +secretKey)
+      if (secretKey){
+        newChats.forEach((chat: ConversationModel) => {
+          if (chat.lastMessage) {
+            chat.lastMessage.content = decrypt(chat.lastMessage.content, secretKey) || "";
+          }
+        });
+      }
+
+      if (pageNumber === 0) {
+        setChats(newChats);
+      } else {
+        setChats((prevChats) => [...prevChats, ...newChats]);
+      }
+      setHasMore(newChats.length === size);
+      setPage(pageNumber);
+    } catch (error) {
+      console.error("Error fetching chats:", error);
+    } finally {
+      setLoadingDialog(false);
+    }
+  }
+
+  async function getChatsFirst(pageNumber: number, content: string, key: string) {
+    try {
+      const res = await get(`/v1/conversation/list`, {
+        page: pageNumber,
+        size,
+        name: content,
+      });
+      const newChats = res.data.content;
+      if (key){
+        newChats.forEach((chat: ConversationModel) => {
+          if (chat.lastMessage) {
+            chat.lastMessage.content = decrypt(chat.lastMessage.content, key) || "";
+          }
+        });
+      }
+
       if (pageNumber === 0) {
         setChats(newChats);
       } else {
@@ -99,12 +145,11 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
     }
   };
 
-  
   const renderChatItem = ({ item }: { item: ConversationModel }) => (
     <TouchableOpacity
       style={styles.chatItem}
       onPress={() => {
-        navigation.navigate("ChatDetail", { 
+        navigation.navigate("ChatDetail", {
           item: item,
           user: user,
         });
@@ -112,9 +157,7 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
     >
       <Image
         source={
-          item.owner?.avatarUrl 
-            ? { uri: item.owner.avatarUrl } 
-            : defaultUserImg
+          item.avatarUrl ? { uri: item.avatarUrl } : defaultUserImg
         }
         style={styles.avatar}
       />
@@ -127,14 +170,19 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
             {item.lastMessage?.createdAt || ""}
           </Text>
         </View>
+
         <View style={styles.messageRow}>
           <Text style={styles.lastMessage} numberOfLines={1}>
-            {item.lastMessage?.content || ""}
+            {/* {decrypt(item.lastMessage?.content, user?.secretKey) || ""} */}
+            {item.lastMessage?.content}
           </Text>
+
           {item.totalUnreadMessages > 0 && (
             <View style={styles.unreadBadge}>
               <Text style={styles.unreadCount}>
-                {item.totalUnreadMessages > 99 ? "99+" : item.totalUnreadMessages}
+                {item.totalUnreadMessages > 99
+                  ? "99+"
+                  : item.totalUnreadMessages}
               </Text>
             </View>
           )}
@@ -142,8 +190,6 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
       </View>
     </TouchableOpacity>
   );
-
-  
 
   return (
     <View style={styles.container}>
@@ -162,7 +208,7 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
 
       <FlatList
         data={chats}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item, index) => `${item._id} - ${index}`}
         renderItem={renderChatItem}
         refreshing={refreshing}
         onRefresh={handleRefresh}

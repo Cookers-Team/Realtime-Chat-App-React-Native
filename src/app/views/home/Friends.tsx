@@ -108,8 +108,15 @@ const Friends = ({ navigation }: any) => {
     <FriendItem 
       item={item}
       navigation = {navigation}
+      onItemDelete = {handleItemDelete}
     />
   );
+
+  const handleItemDelete = (itemId: string) => {
+    setFriends((prevFriends) =>
+      prevFriends.filter((friend) => friend._id !== itemId)
+    );
+  }
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>

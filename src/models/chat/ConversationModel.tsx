@@ -7,6 +7,7 @@ export type ConversationModel = {
   kind: number,
   lastMessage: MessageModel
   isOwner: number
+  avatarUrl: string
   owner: UserModel,
   canMessage: number
   canUpdate: number

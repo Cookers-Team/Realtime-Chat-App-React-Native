@@ -192,11 +192,12 @@ const PostComment = ({
   };
 
   // Child comments
-  const fetchChildComments = async (parentId: string) => {
+  const fetchChildComments = async (parentId: string, postId: string) => {
     setLoadingChildren((prev) => ({ ...prev, [parentId]: true }));
     try {
       const res = await get(`/v1/comment/list`, {
         parent: parentId,
+        post: postId,
         isPaged: 0,
       });
       const childComments = res.data.content;
@@ -209,7 +210,8 @@ const PostComment = ({
     }
   };
 
-  const toggleChildComments = (commentId: string) => {
+  const toggleChildComments = (commentId: string, postId: string) => {
+    console.log("post Id:", postId)
     if (expandedComments[commentId]) {
       // If already expanded, collapse
       setExpandedComments((prev) => {
@@ -219,14 +221,16 @@ const PostComment = ({
       });
     } else {
       // If not expanded, fetch child comments
-      fetchChildComments(commentId);
+      fetchChildComments(commentId, postId);
     }
   };
 
   // Reply to comment
   const handleReply = (comment: CommentModel) => {
     setReplyingTo(comment);
-    toggleChildComments(comment._id);
+    console.log(comment)
+    console.log(comment.post._id)
+    toggleChildComments(comment._id, comment.post._id);
     inputRef.current?.focus();
     onItemReply()
   };
@@ -240,7 +244,7 @@ const PostComment = ({
       item={item}
       onItemUpdate={handleItemUpdate}
       onItemDelete={handleItemDelete}
-      toggleChildComments={toggleChildComments}
+      toggleChildComments={() => {toggleChildComments(item._id, item.post._id)}}
       handleReply={handleReply}
       expandedComments={expandedComments}
       loadingChildren={loadingChildren}

@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import * as CryptoJS from "crypto-js";
+import CryptoJS from 'react-native-crypto-js';
 dayjs.extend(customParseFormat);
 
 const dateToString = (val: any) => {
