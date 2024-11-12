@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from 'react-na
 import { Ionicons } from '@expo/vector-icons';
 import { NotificationModel } from '@/src/models/notification/NotificationModel';
 import useFetch from '@/src/app/hooks/useFetch';
-import { avatarDefault } from '@/src/types/constant';
+import { avatarDefault, imageInfo } from '@/src/types/constant';
 
 
 
@@ -41,7 +41,7 @@ const NotificationItem = ({ item, onItemClick }: any) => {
     >
       <View style={styles.iconContainer}>
          <Image 
-          source= {item.data.user.avatarUrl ? {uri: item.data.user.avatarUrl} : avatarDefault}
+          source= {item.data.user ? (item.data.user.avatarUrl ? {uri: item.data.user.avatarUrl} : avatarDefault) : imageInfo}
           style={styles.avatar}
         />
       </View>

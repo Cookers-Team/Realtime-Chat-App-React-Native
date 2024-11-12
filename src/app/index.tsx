@@ -21,6 +21,8 @@ import FriendRequest from "./views/friend/FriendRequest";
 import FriendSendRequest from "./views/friend/FriendSendRequest";
 import FriendAdd from "./views/friend/FriendAdd";
 import ChatDetail from "./views/chat/ChatDetail";
+import StoryAdd from "./views/story/StoryAdd";
+import StoryDetail from "./views/story/StoryDetail";
 
 const AppNavigator = ({ isAuthenticated }: any) => (
   <Stack.Navigator
@@ -46,6 +48,8 @@ const AppNavigator = ({ isAuthenticated }: any) => (
     <Stack.Screen name="FriendSendRequest" component={FriendSendRequest} />
     <Stack.Screen name="FriendAdd" component={FriendAdd} />
     <Stack.Screen name="ChatDetail" component={ChatDetail} />
+    <Stack.Screen name="StoryAdd" component={StoryAdd} />
+    <Stack.Screen name="StoryDetail" component={StoryDetail} />
   </Stack.Navigator>
 );
 

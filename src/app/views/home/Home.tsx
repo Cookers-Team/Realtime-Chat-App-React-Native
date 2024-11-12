@@ -58,11 +58,9 @@ const Home = () => {
         }}
       >
         <Tab.Screen
-
           name="Chat"
           component={Chat}
           options={{
-          
             tabBarIcon: ({ color, size, focused }) => (
               <TabIcon
                 color={color}

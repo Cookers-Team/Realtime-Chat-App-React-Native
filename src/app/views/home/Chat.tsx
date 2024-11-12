@@ -18,6 +18,8 @@ import { ConversationModel } from "@/src/models/chat/ConversationModel";
 import { MessageModel } from "@/src/models/chat/MessageModel";
 import { UserModel } from "@/src/models/user/UserModel";
 import { decrypt } from "@/src/types/utils";
+import { StoryModel } from "@/src/models/story/StoryModel";
+import { StoryItem } from "../story/StoryItem";
 
 const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
   const { get, loading } = useFetch();
@@ -29,15 +31,25 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
   const [page, setPage] = useState(0);
   const [user, setUser] = useState<UserModel>();
   const [secretKey, setSecretKey] = useState("");
+  const [stories, setStories] = useState<StoryModel[]>([]);
   const size = 10;
 
   useEffect(() => {
     fetch();
+    fetchStories();
   }, []);
 
   const fetch = async () => {
     const key = await fetchUserData();
     await getChatsFirst(0, "", key);
+  };
+  const fetchStories = async () => {
+    try {
+      const res = await get('/v1/story/list');
+      setStories(res.data.content);
+    } catch (error) {
+      console.error('Error fetching stories:', error);
+    }
   };
   const fetchUserData = async () => {
     try {
@@ -137,6 +149,7 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
     setSearchQuery("");
     setPage(0);
     getChats(0, "").then(() => setRefreshing(false));
+    fetchStories();
   };
 
   const handleLoadMore = () => {
@@ -191,6 +204,36 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
     </TouchableOpacity>
   );
 
+
+  const handleStoryPress = (item: StoryModel) => {
+    navigation.navigate('StoryDetail', { itemId: item._id});;
+  };
+
+  
+  const renderStoryItem = ({ item }: { item: StoryModel }) => (
+    <StoryItem
+      item={item}
+      onPress={() => handleStoryPress(item)} 
+    />
+  )
+
+  const AddStoryButton = ({ onPress }: { onPress: () => void }) => (
+    <TouchableOpacity style={styles.storyContainer} onPress={onPress}>
+      <View style={styles.addStoryButton}>
+        <Text style={styles.plusIcon}>+</Text>
+      </View>
+      <Text style={styles.storyUsername}>Đăng tin</Text>
+    </TouchableOpacity>
+  );
+
+  const createStory = () => {
+    navigation.navigate("StoryAdd", {
+      onRefresh: () => {
+        handleRefresh();
+      }
+    });
+  }
+
   return (
     <View style={styles.container}>
       {loadingDialog && <LoadingDialog isVisible={loadingDialog} />}
@@ -205,6 +248,17 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
         additionalIcon="add"
         onAdditionalIconPress={() => navigation.navigate("ChatAdd")}
       />
+      <View style={styles.storyListContainer}>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={stories} 
+          renderItem={renderStoryItem}
+          keyExtractor={(item) => item._id}
+          ListHeaderComponent={() => <AddStoryButton onPress={createStory} />}
+          contentContainerStyle={styles.storyList}
+        />
+      </View>
 
       <FlatList
         data={chats}
@@ -309,6 +363,50 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 12,
     fontWeight: "bold",
+  },
+  storyContainer: {
+    alignItems: 'center',
+    marginHorizontal: 4,
+    width: 80,
+  },
+  storyRing: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    borderWidth: 2,
+    padding: 2,
+    marginBottom: 4,
+  },
+  storyAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  storyUsername: {
+    fontSize: 12,
+    textAlign: 'center',
+    color: '#262626',
+    maxWidth: 64,
+  },
+  addStoryButton: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: '#f2f2f2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  plusIcon: {
+    fontSize: 32,
+    color: '#059BF0',
+  },
+  storyListContainer: {
+    backgroundColor: 'white',
+    paddingVertical: 10,
+  },
+  storyList: {
+    paddingHorizontal: 10,
   },
 });
 

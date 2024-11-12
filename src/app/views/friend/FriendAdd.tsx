@@ -18,7 +18,7 @@ import HeaderLayout from "@/src/components/header/Header";
 import SearchBarWhite from "@/src/components/search/SearchBarWhite";
 import { FriendModel } from "@/src/models/friend/FriendModel";
 import Toast from 'react-native-toast-message';
-import { successToast } from '@/src/types/toast';
+import { errorToast, successToast } from '@/src/types/toast';
 import { avatarDefault } from '@/src/types/constant';
 import ModalUserDetail from '@/src/components/friend/ModalUserDetail';
 import ModalConfirm from '@/src/components/post/ModalConfirm';
@@ -108,7 +108,7 @@ const FriendAdd = ({ navigation }: any) => {
           prevResults.filter((result) => result._id !== userId)
         );
       } else {
-        throw new Error("Failed to send friend request");
+        Toast.show(errorToast(response.message));
       }
     } catch (error) {
       console.error("Lỗi gửi lời mời kết bạn:", error);

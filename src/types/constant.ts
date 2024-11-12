@@ -9,7 +9,7 @@ const PhonePattern = /^0[35789][0-9]{8}$/;
 const StudentIdPattern = /^[1-9][0-9]{7}$/;
 
 // const remoteUrl = "https://realtime-chat-app-api-1.onrender.com";
-const remoteUrl = "http://192.168.162.41:7979";
+const remoteUrl = "http://192.168.1.13:7979";
 const Stack = createNativeStackNavigator<{
   Loading: any;
   Login: any;
@@ -31,12 +31,15 @@ const Stack = createNativeStackNavigator<{
   FriendRequest: any;
   FriendSendRequest: any;
   FriendAdd: any;
-  ChatDetail:any
+  ChatDetail:any;
+  StoryAdd: any;
+  StoryDetail: any;
 }>();
 
 const Tab = createBottomTabNavigator();
 const emptyBox = require("../assets/empty_box.png");
 const avatarDefault = require("../assets/user_icon.png");
+const imageInfo = require("../assets/info.png");
 
 export {
   Tab,
@@ -46,5 +49,6 @@ export {
   remoteUrl,
   emptyBox,
   StudentIdPattern,
-  avatarDefault
+  avatarDefault,
+  imageInfo
 };
