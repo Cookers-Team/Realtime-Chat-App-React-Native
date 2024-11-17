@@ -24,6 +24,7 @@ import Toast from "react-native-toast-message";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import ModalUpdate from "@/src/components/chat/ModalUpdate";
 import { LoadingDialog } from "@/src/components/Dialog";
+import ModalSingleImageComponent from "@/src/components/post/ModalSingleImageComponent";
 
 const MessageItem = ({
   item,
@@ -37,7 +38,11 @@ const MessageItem = ({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [loadingDialog, setLoadingDialog] = useState(false);
+  const [isModalImageVisible, setIsModalImageVisible] = useState(false);
 
+  const handleImagePress = () => {
+    setIsModalImageVisible(true);
+  };
   const [editedContent, setEditedContent] = useState(
     decrypt(item.content, userSecretKey)
   );
@@ -151,126 +156,170 @@ const MessageItem = ({
   };
 
   return (
-    <TouchableOpacity onLongPress={item.isOwner ? handleMenuPress : undefined}>
-      {loadingDialog && <LoadingDialog isVisible={loadingDialog} />}
-      <View
-        style={[
-          styles.messageContainer,
-          item.isOwner ? styles.myMessage : styles.otherMessage,
-        ]}
-      >
-        {!item.isOwner && (
-          <Image
-            source={
-              item.user.avatarUrl
-                ? { uri: item.user.avatarUrl }
-                : defaultUserImg
-            }
-            style={styles.messageAvatar}
-          />
-        )}
-        <View
+    <View>
+      {item.imageUrl && (
+        <TouchableOpacity
+          onPress={handleImagePress}
           style={[
-            styles.messageBubble,
-            item.isOwner ? styles.myMessageBubble : styles.otherMessageBubble,
+            styles.imageWrapper,
+            item.isOwner
+              ? { alignSelf: "flex-end" }
+              : { alignSelf: "flex-start", marginLeft: 50 },
           ]}
         >
-          {!item.isOwner && (
-            <Text style={styles.senderName}>{item.user.displayName}</Text>
-          )}
-          <Text
-            style={[
-              styles.messageText,
-              item.isOwner ? styles.myMessageText : styles.otherMessageText,
-            ]}
-          >
-            {decrypt(item.content, userSecretKey)}
-          </Text>
-          <Text style={styles.messageTime}>{item.createdAt}</Text>
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={styles.imageStyle}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+      )}
+      <TouchableOpacity
+        onLongPress={item.isOwner ? handleMenuPress : undefined}
+        style={styles.messageItemContainer}
+      >
+        {loadingDialog && <LoadingDialog isVisible={loadingDialog} />}
 
+        <View style={styles.messageItem}>
           <View
             style={[
-              styles.reactionContainer,
-              item.isOwner ? styles.ownReactionContainer : null,
+              styles.messageContainer,
+              item.isOwner ? styles.myMessage : styles.otherMessage,
             ]}
           >
-            <TouchableOpacity
-              onPress={handleToggleReaction}
-              style={[
-                styles.reactionButton,
-                item.isOwner ? styles.ownReactionButton : null,
-              ]}
-            >
-              <Ionicons
-                name={item.isReacted ? "heart" : "heart-outline"}
-                size={20}
-                color={
-                  item.isReacted
-                    ? "#e74c3c"
-                    : item.isOwner
-                    ? "#ffffff"
-                    : "#7f8c8d"
+            {!item.isOwner && (
+              <Image
+                source={
+                  item.user.avatarUrl
+                    ? { uri: item.user.avatarUrl }
+                    : defaultUserImg
                 }
+                style={styles.messageAvatar}
               />
-            </TouchableOpacity>
-            
-            <Text
+            )}
+            <View
               style={[
-                styles.reactionCount,
-                item.isOwner ? styles.ownReactionCount : null,
+                styles.messageBubble,
+                item.isOwner
+                  ? styles.myMessageBubble
+                  : styles.otherMessageBubble,
               ]}
             >
-              {item.totalReactions}
-            </Text>
+              {!item.isOwner && (
+                <Text style={styles.senderName}>{item.user.displayName}</Text>
+              )}
+              <Text
+                style={[
+                  styles.messageText,
+                  item.isOwner ? styles.myMessageText : styles.otherMessageText,
+                ]}
+              >
+                {decrypt(item.content, userSecretKey)}
+              </Text>
+
+              <Text style={styles.messageTime}>{item.createdAt}</Text>
+              <View
+                style={[
+                  item.isOwner
+                    ? styles.ownReactionContainer
+                    : styles.otherReactionContainer,
+                ]}
+              >
+                <TouchableOpacity
+                  onPress={handleToggleReaction}
+                  style={[
+                    item.isOwner
+                      ? styles.ownReactionButton
+                      : styles.otherReactionButton,
+                  ]}
+                >
+                  <Ionicons
+                    name={item.isReacted ? "heart" : "heart-outline"}
+                    size={15}
+                    color={
+                      item.isReacted
+                        ? "#e74c3c"
+                        : item.Owner
+                        ? "#ffffff"
+                        : "#7f8c8d"
+                    }
+                  />
+                </TouchableOpacity>
+
+                <Text
+                  style={[
+                    item.isOwner
+                      ? styles.ownReactionCount
+                      : styles.reactionCount,
+                  ]}
+                >
+                  {item.totalReactions}
+                </Text>
+              </View>
+            </View>
+
+            <ModalSingleImageComponent
+              imageUri={item.imageUrl}
+              isVisible={isModalImageVisible}
+              onClose={() => setIsModalImageVisible(false)}
+            />
+
+            <MenuClick
+              titleUpdate={"Chỉnh sửa tin nhắn"}
+              titleDelete={"Xóa tin nhắn"}
+              isVisible={showMenu}
+              onClose={() => setShowMenu(false)}
+              onUpdate={handleUpdate}
+              onDelete={handleDeletePress}
+            />
+
+            <ModalConfirm
+              isVisible={showDeleteModal}
+              title="Bạn sẽ xóa tin nhắn này chứ?"
+              onClose={handleDeleteCancel}
+              onConfirm={handleDeleteConfirm}
+            />
+
+            <ModalUpdate
+              visible={showUpdateModal}
+              onCancel={handleUpdateCancel}
+              onUpdate={handleUpdateConfirm}
+              initialContent={editedContent}
+            />
           </View>
         </View>
-
-        <MenuClick
-          titleUpdate={"Chỉnh sửa tin nhắn"}
-          titleDelete={"Xóa tin nhắn"}
-          isVisible={showMenu}
-          onClose={() => setShowMenu(false)}
-          onUpdate={handleUpdate}
-          onDelete={handleDeletePress}
-        />
-
-        <ModalConfirm
-          isVisible={showDeleteModal}
-          title="Bạn sẽ xóa tin nhắn này chứ?"
-          onClose={handleDeleteCancel}
-          onConfirm={handleDeleteConfirm}
-        />
-
-        <ModalUpdate
-          visible={showUpdateModal}
-          onCancel={handleUpdateCancel}
-          onUpdate={handleUpdateConfirm}
-          initialContent={editedContent}
-        />
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  messageContainer: {
+  messageItemContainer: {
+    paddingStart: 5,
+  },
+  messageContainer: {},
+  myMessage: {
+    justifyContent: "flex-end",
+
     flexDirection: "row",
     marginVertical: 4,
     marginHorizontal: 8,
     position: "relative",
   },
-  myMessage: {
-    justifyContent: "flex-end",
-  },
   otherMessage: {
     justifyContent: "flex-start",
+    flexDirection: "row",
+    marginVertical: 4,
+    marginHorizontal: 8,
+    paddingEnd: 10,
   },
   messageAvatar: {
     width: 30,
     height: 30,
     borderRadius: 15,
     marginRight: 8,
-    alignSelf: "flex-end",
+
+    alignSelf: "flex-start",
   },
   messageBubble: {
     maxWidth: "70%",
@@ -303,7 +352,7 @@ const styles = StyleSheet.create({
   messageTime: {
     fontSize: 10,
     color: "#rgba(0, 0, 0, 0.5)",
-    alignSelf: "flex-end",
+    alignSelf: "flex-start",
   },
   menuIcon: {
     padding: 8,
@@ -364,33 +413,73 @@ const styles = StyleSheet.create({
     color: "white",
   },
   //Reaction
-  reactionButton: {
+  otherReactionButton: {
     marginTop: 4,
     alignSelf: "flex-end",
+    backgroundColor: "#ffffff",
+    borderRadius: 15,
+    padding: 2,
   },
   ownReactionButton: {
     marginTop: 4,
     alignSelf: "flex-start",
+    backgroundColor: "#ffffff",
+    borderRadius: 15,
+    padding: 2,
   },
   reactionContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 4,
+    position: "absolute",
+    bottom: -5,
+    right: 10,
   },
   ownReactionContainer: {
     alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+    position: "absolute",
+    bottom: -12,
+    right: 5,
+  },
+  otherReactionContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    alignSelf: "flex-end",
+    position: "absolute",
+    bottom: -12,
+    right: 5,
   },
   reactionCount: {
-    marginLeft: 4,
+    marginLeft: 2,
     marginTop: 4,
-    fontSize: 14,
-    color: "#7f8c8d",
+    fontSize: 11,
+    color: "#000000",
+    backgroundColor: "#ffffff",
+    borderRadius: 15,
+    paddingHorizontal: 5,
   },
   ownReactionCount: {
-    marginLeft: 4,
+    marginLeft: 2,
     marginTop: 4,
-    fontSize: 14,
-    color: "#ffffff",
+    fontSize: 11,
+    color: "#000000",
+    backgroundColor: "#ffffff",
+    borderRadius: 15,
+    paddingHorizontal: 5,
+  },
+  messageItem: {
+    marginBottom: 10,
+  },
+  imageWrapper: {
+    marginVertical: 10,
+  },
+  imageStyle: {
+    width: 150,
+    height: 250,
   },
 });
 

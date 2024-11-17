@@ -9,7 +9,7 @@ const PhonePattern = /^0[35789][0-9]{8}$/;
 const StudentIdPattern = /^[1-9][0-9]{7}$/;
 
 // const remoteUrl = "https://realtime-chat-app-api-1.onrender.com";
-const remoteUrl = "http://192.168.1.13:7979";
+const remoteUrl = "http:/192.168.1.5:7979";
 const Stack = createNativeStackNavigator<{
   Loading: any;
   Login: any;

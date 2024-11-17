@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   MessageCircleMoreIcon,
   BookUserIcon,
@@ -6,9 +6,9 @@ import {
   NewspaperIcon,
   BellIcon,
 } from "lucide-react-native";
-import ChatList from "../chat/ChatList";
+// import ChatList from "../chat/ChatList";
 import Profile from "./Profile";
-import { Tab } from "@/src/types/constant";
+import { remoteUrl, Tab } from "@/src/types/constant";
 import TabIcon from "@/src/components/TabIcon";
 import Friends from "./Friends";
 import Post from "./Post";
@@ -21,19 +21,28 @@ import Toast from "react-native-toast-message";
 import useFetch from "../../hooks/useFetch";
 import { UserModel } from "@/src/models/user/UserModel";
 import Chat from "./Chat";
+import { io, Socket } from "socket.io-client";
+import { set } from "lodash";
 
 const Home = () => {
-  const {get, loading} = useFetch();
+  const { get, loading } = useFetch();
+
   const { isDialogVisible, showDialog, hideDialog } = useDialog();
   const [isTabBarVisible, setIsTabBarVisible] = useState(true);
   const [user, setUser] = useState<UserModel>();
+  const [totalUnreadNotifications, setTotalUnreadNotifications] = useState(0);
+  const [totalUnreadMessages, setTotalUnreadMessages] = useState(0);
+
+  const socketRef = useRef<Socket | null>(null);
   useBackHandler(showDialog);
 
   const fetchUserData = async () => {
     try {
       const res = await get("/v1/user/profile");
-      console.log("User data:", res.data);
+      // console.log("User data:", res.data);
       setUser(res.data);
+      setTotalUnreadNotifications(res.data.totalUnreadNotifications);
+      setTotalUnreadMessages(res.data.totalUnreadMessages);
     } catch (error) {
       console.error("Error fetching user data:", error);
     }
@@ -41,18 +50,63 @@ const Home = () => {
 
   useEffect(() => {
     fetchUserData();
-    
+
+    initializeSocket();
+
+    return () => {
+      if (socketRef.current) {
+        // Leave conversation before disconnecting
+        socketRef.current.emit("LEAVE_NOTIFICATION", user?._id);
+        socketRef.current.disconnect();
+      }
+    };
   }, []);
+
+  const initializeSocket = () => {
+    const socket = io(remoteUrl, {
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 3000,
+    });
+
+    socket.on("connect", () => {
+      console.log("Socket.IO Connected notification");
+      // Join conversation room on connect
+      socket.emit("JOIN_NOTIFICATION", user?._id);
+      console.log("Socket.IO Connected notification");
+    });
+
+    socket.on("disconnect", (reason) => {
+      console.log("Socket.IO Disconnected:", reason);
+    });
+
+    socket.on("NEW_NOTIFICATION", async (profile: UserModel) => {
+      console.log("NEW_NOTIFICATION");
+      setTotalUnreadMessages(profile.totalUnreadMessages);
+      setTotalUnreadNotifications(profile.totalUnreadNotifications);
+      // notificationEmitter.emit("NEW_NOTIFICATION");
+      // await fetchUpdateMessage(messageId);
+    });
+
+    // socket.on("DELETE_MESSAGE", (messageId: string) => {
+    //   fetchDeleteMessage(messageId);
+    // });
+
+    socketRef.current = socket;
+  };
 
   return (
     <>
-     <Tab.Navigator
+      <Tab.Navigator
         screenOptions={{
           headerShown: false,
-          tabBarStyle: isTabBarVisible ? {
-            borderTopColor: "#ccc",
-          } : { display: 'none' },
-          
+          tabBarStyle: isTabBarVisible
+            ? {
+                borderTopColor: "#ccc",
+              }
+            : { display: "none" },
+
           tabBarActiveTintColor: "#059bf0",
           tabBarShowLabel: false,
         }}
@@ -68,7 +122,7 @@ const Home = () => {
                 focused={focused}
                 icon={MessageCircleMoreIcon}
                 label="Tin nhắn"
-                badge={user?.totalUnreadMessages}
+                badge={totalUnreadMessages}
               />
             ),
           }}
@@ -102,14 +156,15 @@ const Home = () => {
             ),
           }}
         >
-          {(props: any) => <Post {...props} setIsTabBarVisible={setIsTabBarVisible} />}
+          {(props: any) => (
+            <Post {...props} setIsTabBarVisible={setIsTabBarVisible} />
+          )}
         </Tab.Screen>
-       
+
         <Tab.Screen
           name="Notification"
           component={Notification}
           options={{
-           
             tabBarIcon: ({ color, size, focused }) => {
               return (
                 <TabIcon
@@ -118,10 +173,10 @@ const Home = () => {
                   focused={focused}
                   icon={BellIcon}
                   label="Thông báo"
-                  badge={user?.totalUnreadNotifications}
+                  badge={totalUnreadNotifications}
                 />
               );
-            }
+            },
           }}
         />
         <Tab.Screen
@@ -141,7 +196,7 @@ const Home = () => {
           }}
         />
       </Tab.Navigator>
-      
+
       <Toast />
       <ConfimationDialog
         isVisible={isDialogVisible}
@@ -149,8 +204,8 @@ const Home = () => {
         confirmText="Thoát"
         color="red"
         message="Bạn có muốn thoát ứng dụng không?"
-
-        onConfirm={() => BackHandler.exitApp()}        onCancel={hideDialog}
+        onConfirm={() => BackHandler.exitApp()}
+        onCancel={hideDialog}
       />
     </>
   );

@@ -37,6 +37,10 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
   useEffect(() => {
     fetch();
     fetchStories();
+
+    const handleNotification = () => {
+      handleRefresh();
+    };
   }, []);
 
   const fetch = async () => {
@@ -45,10 +49,10 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
   };
   const fetchStories = async () => {
     try {
-      const res = await get('/v1/story/list');
+      const res = await get("/v1/story/list");
       setStories(res.data.content);
     } catch (error) {
-      console.error('Error fetching stories:', error);
+      console.error("Error fetching stories:", error);
     }
   };
   const fetchUserData = async () => {
@@ -83,11 +87,12 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
         name: content,
       });
       const newChats = res.data.content;
-      console.log('secretKey in chat: ' +secretKey)
-      if (secretKey){
+      console.log("secretKey in chat: " + secretKey);
+      if (secretKey) {
         newChats.forEach((chat: ConversationModel) => {
           if (chat.lastMessage) {
-            chat.lastMessage.content = decrypt(chat.lastMessage.content, secretKey) || "";
+            chat.lastMessage.content =
+              decrypt(chat.lastMessage.content, secretKey) || "";
           }
         });
       }
@@ -106,7 +111,11 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
     }
   }
 
-  async function getChatsFirst(pageNumber: number, content: string, key: string) {
+  async function getChatsFirst(
+    pageNumber: number,
+    content: string,
+    key: string
+  ) {
     try {
       const res = await get(`/v1/conversation/list`, {
         page: pageNumber,
@@ -114,10 +123,11 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
         name: content,
       });
       const newChats = res.data.content;
-      if (key){
+      if (key) {
         newChats.forEach((chat: ConversationModel) => {
           if (chat.lastMessage) {
-            chat.lastMessage.content = decrypt(chat.lastMessage.content, key) || "";
+            chat.lastMessage.content =
+              decrypt(chat.lastMessage.content, key) || "";
           }
         });
       }
@@ -165,13 +175,14 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
         navigation.navigate("ChatDetail", {
           item: item,
           user: user,
+          onRefresh: () => {
+            handleRefresh();
+          },
         });
       }}
     >
       <Image
-        source={
-          item.avatarUrl ? { uri: item.avatarUrl } : defaultUserImg
-        }
+        source={item.avatarUrl ? { uri: item.avatarUrl } : defaultUserImg}
         style={styles.avatar}
       />
       <View style={styles.chatContent}>
@@ -204,18 +215,18 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
     </TouchableOpacity>
   );
 
-
   const handleStoryPress = (item: StoryModel) => {
-    navigation.navigate('StoryDetail', { itemId: item._id});;
+    navigation.navigate("StoryDetail", {
+      itemId: item._id,
+      onRefresh: () => {
+        handleRefresh();
+      },
+    });
   };
 
-  
   const renderStoryItem = ({ item }: { item: StoryModel }) => (
-    <StoryItem
-      item={item}
-      onPress={() => handleStoryPress(item)} 
-    />
-  )
+    <StoryItem item={item} onPress={() => handleStoryPress(item)} />
+  );
 
   const AddStoryButton = ({ onPress }: { onPress: () => void }) => (
     <TouchableOpacity style={styles.storyContainer} onPress={onPress}>
@@ -230,9 +241,9 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
     navigation.navigate("StoryAdd", {
       onRefresh: () => {
         handleRefresh();
-      }
+      },
     });
-  }
+  };
 
   return (
     <View style={styles.container}>
@@ -252,7 +263,7 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
-          data={stories} 
+          data={stories}
           renderItem={renderStoryItem}
           keyExtractor={(item) => item._id}
           ListHeaderComponent={() => <AddStoryButton onPress={createStory} />}
@@ -365,7 +376,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   storyContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginHorizontal: 4,
     width: 80,
   },
@@ -384,25 +395,25 @@ const styles = StyleSheet.create({
   },
   storyUsername: {
     fontSize: 12,
-    textAlign: 'center',
-    color: '#262626',
+    textAlign: "center",
+    color: "#262626",
     maxWidth: 64,
   },
   addStoryButton: {
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: '#f2f2f2',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#f2f2f2",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 4,
   },
   plusIcon: {
     fontSize: 32,
-    color: '#059BF0',
+    color: "#059BF0",
   },
   storyListContainer: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     paddingVertical: 10,
   },
   storyList: {
