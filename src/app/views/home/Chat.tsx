@@ -24,8 +24,9 @@ import { remoteUrl } from "@/src/types/constant";
 import { io, Socket } from "socket.io-client";
 import eventBus from "@/src/types/eventBus";
 import { useSocket } from "@/src/components/SocketContext";
+import { useRefresh } from "./RefreshContext";
 
-const ChatContent = ({ navigation, setIsTabBarVisiblem, route }: any) => {
+const ChatContent = ({ navigation, setIsTabBarVisiblem }: any) => {
   const { get, loading } = useFetch();
   const [loadingDialog, setLoadingDialog] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -37,10 +38,9 @@ const ChatContent = ({ navigation, setIsTabBarVisiblem, route }: any) => {
   const [secretKey, setSecretKey] = useState("");
   const [stories, setStories] = useState<StoryModel[]>([]);
   const size = 10;
+  const { refreshTrigger } = useRefresh();
   // const { socket, setSocket } = useSocket();
-  const { refreshData } = route.params;
   useEffect(() => {
-    refreshData();
     fetch();
     fetchStories();
     // Get the refreshData function
@@ -56,7 +56,7 @@ const ChatContent = ({ navigation, setIsTabBarVisiblem, route }: any) => {
     //     console.log("Socket disconnected.");
     //   });
     // }
-  }, []);
+  }, [refreshTrigger]);
 
   const fetch = async () => {
     const key = await fetchUserData();
@@ -183,6 +183,14 @@ const ChatContent = ({ navigation, setIsTabBarVisiblem, route }: any) => {
     }
   };
 
+  const handleAddFriend = () => {
+    navigation.navigate("FriendAdd", {
+      onRefresh: () => {
+        handleRefresh();
+      },
+    });
+  };
+
   const renderChatItem = ({ item }: { item: ConversationModel }) => {
     return (
       <TouchableOpacity
@@ -274,7 +282,7 @@ const ChatContent = ({ navigation, setIsTabBarVisiblem, route }: any) => {
         placeholder="Tìm kiếm tin nhắn..."
         handleClear={clearSearch}
         additionalIcon="add"
-        onAdditionalIconPress={() => navigation.navigate("ChatAdd")}
+        onAdditionalIconPress={() => handleAddFriend()}
       />
       <View style={styles.storyListContainer}>
         <FlatList

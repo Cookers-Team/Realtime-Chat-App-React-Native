@@ -25,6 +25,7 @@ import { io, Socket } from "socket.io-client";
 import { set } from "lodash";
 import eventBus from "@/src/types/eventBus";
 import { SocketProvider, useSocket } from "@/src/components/SocketContext";
+import { useRefresh } from "./RefreshContext";
 
 const Home = () => {
   const { get, loading } = useFetch();
@@ -36,6 +37,8 @@ const Home = () => {
   const [totalUnreadMessages, setTotalUnreadMessages] = useState(0);
   const { socket, setSocket } = useSocket();
   const socketRef = useRef<Socket | null>(null);
+  const { setRefreshTrigger } = useRefresh();
+
   useBackHandler(showDialog);
 
   const fetchUserData = async () => {
@@ -86,137 +89,122 @@ const Home = () => {
       console.log("NEW_NOTIFICATION");
       setTotalUnreadMessages(profile.totalUnreadMessages);
       setTotalUnreadNotifications(profile.totalUnreadNotifications);
-      // Add the refresh function
-      refreshChatData();
-      // await fetchUpdateMessage(messageId);
+      setRefreshTrigger((prev) => prev + 1);
     });
-
-    // socket.on("DELETE_MESSAGE", (messageId: string) => {
-    //   fetchDeleteMessage(messageId);
-    // });
-
     socketRef.current = socket;
   };
 
-  const refreshChatData = () => {
-    // You can refresh the data here, for example by fetching the latest messages
-    console.log("Refreshing chat dat...");
-    // Call your fetch function or update the necessary states
-  };
   return (
     <>
-      <SocketProvider>
-        <Tab.Navigator
-          screenOptions={{
-            headerShown: false,
-            tabBarStyle: isTabBarVisible
-              ? {
-                  borderTopColor: "#ccc",
-                }
-              : { display: "none" },
+      <Tab.Navigator
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: isTabBarVisible
+            ? {
+                borderTopColor: "#ccc",
+              }
+            : { display: "none" },
 
-            tabBarActiveTintColor: "#059bf0",
-            tabBarShowLabel: false,
+          tabBarActiveTintColor: "#059bf0",
+          tabBarShowLabel: false,
+        }}
+      >
+        <Tab.Screen
+          name="Chat"
+          component={Chat}
+          options={{
+            tabBarIcon: ({ color, size, focused }) => (
+              <TabIcon
+                color={color}
+                size={size}
+                focused={focused}
+                icon={MessageCircleMoreIcon}
+                label="Tin nhắn"
+                badge={totalUnreadMessages}
+              />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Friends"
+          component={Friends}
+          options={{
+            tabBarIcon: ({ color, size, focused }) => (
+              <TabIcon
+                color={color}
+                size={size}
+                focused={focused}
+                icon={BookUserIcon}
+                label="Bạn bè"
+              />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Post"
+          options={{
+            tabBarIcon: ({ color, size, focused }) => (
+              <TabIcon
+                color={color}
+                size={size}
+                focused={focused}
+                icon={NewspaperIcon}
+                label="Bài đăng"
+              />
+            ),
           }}
         >
-          <Tab.Screen
-            name="Chat"
-            component={Chat}
-            initialParams={{ refreshData: refreshChatData }}
-            options={{
-              tabBarIcon: ({ color, size, focused }) => (
-                <TabIcon
-                  color={color}
-                  size={size}
-                  focused={focused}
-                  icon={MessageCircleMoreIcon}
-                  label="Tin nhắn"
-                  badge={totalUnreadMessages}
-                />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="Friends"
-            component={Friends}
-            options={{
-              tabBarIcon: ({ color, size, focused }) => (
-                <TabIcon
-                  color={color}
-                  size={size}
-                  focused={focused}
-                  icon={BookUserIcon}
-                  label="Bạn bè"
-                />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="Post"
-            options={{
-              tabBarIcon: ({ color, size, focused }) => (
-                <TabIcon
-                  color={color}
-                  size={size}
-                  focused={focused}
-                  icon={NewspaperIcon}
-                  label="Bài đăng"
-                />
-              ),
-            }}
-          >
-            {(props: any) => (
-              <Post {...props} setIsTabBarVisible={setIsTabBarVisible} />
-            )}
-          </Tab.Screen>
+          {(props: any) => (
+            <Post {...props} setIsTabBarVisible={setIsTabBarVisible} />
+          )}
+        </Tab.Screen>
 
-          <Tab.Screen
-            name="Notification"
-            component={Notification}
-            options={{
-              tabBarIcon: ({ color, size, focused }) => {
-                return (
-                  <TabIcon
-                    color={color}
-                    size={size}
-                    focused={focused}
-                    icon={BellIcon}
-                    label="Thông báo"
-                    badge={totalUnreadNotifications}
-                  />
-                );
-              },
-            }}
-          />
-          <Tab.Screen
-            name="Profile"
-            component={Profile}
-            options={{
-              tabBarLabel: "Profile",
-              tabBarIcon: ({ color, size, focused }) => (
+        <Tab.Screen
+          name="Notification"
+          component={Notification}
+          options={{
+            tabBarIcon: ({ color, size, focused }) => {
+              return (
                 <TabIcon
                   color={color}
                   size={size}
                   focused={focused}
-                  icon={UserRoundIcon}
-                  label="Cá nhân"
+                  icon={BellIcon}
+                  label="Thông báo"
+                  badge={totalUnreadNotifications}
                 />
-              ),
-            }}
-          />
-        </Tab.Navigator>
-
-        <Toast />
-        <ConfimationDialog
-          isVisible={isDialogVisible}
-          title="Thoát ứng dụng"
-          confirmText="Thoát"
-          color="red"
-          message="Bạn có muốn thoát ứng dụng không?"
-          onConfirm={() => BackHandler.exitApp()}
-          onCancel={hideDialog}
+              );
+            },
+          }}
         />
-      </SocketProvider>
+        <Tab.Screen
+          name="Profile"
+          component={Profile}
+          options={{
+            tabBarLabel: "Profile",
+            tabBarIcon: ({ color, size, focused }) => (
+              <TabIcon
+                color={color}
+                size={size}
+                focused={focused}
+                icon={UserRoundIcon}
+                label="Cá nhân"
+              />
+            ),
+          }}
+        />
+      </Tab.Navigator>
+
+      <Toast />
+      <ConfimationDialog
+        isVisible={isDialogVisible}
+        title="Thoát ứng dụng"
+        confirmText="Thoát"
+        color="red"
+        message="Bạn có muốn thoát ứng dụng không?"
+        onConfirm={() => BackHandler.exitApp()}
+        onCancel={hideDialog}
+      />
     </>
   );
 };

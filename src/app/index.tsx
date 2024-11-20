@@ -23,6 +23,7 @@ import FriendAdd from "./views/friend/FriendAdd";
 import ChatDetail from "./views/chat/ChatDetail";
 import StoryAdd from "./views/story/StoryAdd";
 import StoryDetail from "./views/story/StoryDetail";
+import { RefreshProvider } from "./views/home/RefreshContext";
 
 const AppNavigator = ({ isAuthenticated }: any) => (
   <Stack.Navigator
@@ -88,16 +89,18 @@ const App = () => {
 
   return (
     <>
-      {isLoading ? (
-        <Stack.Navigator
-          initialRouteName="Loading"
-          screenOptions={{ headerShown: false }}
-        >
-          <Stack.Screen name="Loading" component={Loading} />
-        </Stack.Navigator>
-      ) : (
-        <AppNavigator isAuthenticated={isAuthenticated} />
-      )}
+      <RefreshProvider>
+        {isLoading ? (
+          <Stack.Navigator
+            initialRouteName="Loading"
+            screenOptions={{ headerShown: false }}
+          >
+            <Stack.Screen name="Loading" component={Loading} />
+          </Stack.Navigator>
+        ) : (
+          <AppNavigator isAuthenticated={isAuthenticated} />
+        )}
+      </RefreshProvider>
     </>
   );
 };
