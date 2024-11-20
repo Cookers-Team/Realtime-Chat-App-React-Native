@@ -26,6 +26,7 @@ import { io, Socket } from "socket.io-client";
 import MessageItem from "./MessageItem";
 import Toast, { ErrorToast } from "react-native-toast-message";
 import { errorToast } from "@/src/types/toast";
+import eventBus from "@/src/types/eventBus";
 
 const ChatDetail = ({ route, navigation }: any) => {
   const item: ConversationModel = route.params?.item;
@@ -62,10 +63,10 @@ const ChatDetail = ({ route, navigation }: any) => {
 
     return () => {
       if (socketRef.current) {
-        // Leave conversation before disconnecting
         socketRef.current.emit("LEAVE_CONVERSATION", item._id);
         socketRef.current.disconnect();
       }
+      eventBus.off("REFRESH_DATA", handleRefresh);
     };
   }, []);
 
@@ -155,6 +156,7 @@ const ChatDetail = ({ route, navigation }: any) => {
       socket.emit("JOIN_CONVERSATION", item._id);
     });
 
+  
     socket.on("disconnect", (reason) => {
       console.log("Socket.IO Disconnected:", reason);
     });

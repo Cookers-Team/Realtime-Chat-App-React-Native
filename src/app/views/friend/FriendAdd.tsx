@@ -24,7 +24,7 @@ import ModalUserDetail from '@/src/components/friend/ModalUserDetail';
 import ModalConfirm from '@/src/components/post/ModalConfirm';
 import { UserModel } from '@/src/models/user/UserModel';
 
-const FriendAdd = ({ navigation }: any) => {
+const FriendAdd = ({ navigation, route }: any) => {
   const { get, post, loading } = useFetch();
   const [loadingDialog, setLoadingDialog] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -166,12 +166,17 @@ const FriendAdd = ({ navigation }: any) => {
     );
   };
 
+  const handleBack = () => {
+    route.params.onRefresh();
+    navigation.goBack();
+  };
+
   return (
     <View style={styles.container}>
       <HeaderLayout
         title="Thêm bạn mới"
         showBackButton={true}
-        onBackPress={() => navigation.goBack()}
+        onBackPress={() => handleBack()}
       />
       {loadingDialog && <LoadingDialog isVisible={loadingDialog} />}
 

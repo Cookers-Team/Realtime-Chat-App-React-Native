@@ -41,7 +41,6 @@ const Notification = ({ navigation }: any) => {
         };
        
         const res = await get(`/v1/notification/list`, params);
-        console.log("Notification response:", res.data.content);
         
         const newNotifications = res.data.content;
         if (pageNumber === 0) {

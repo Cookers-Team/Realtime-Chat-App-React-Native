@@ -65,9 +65,10 @@ const Friends = ({ navigation }: any) => {
       const res = await get(`/v1/friendship/list`, {
         page: pageNumber,
         size,
-        displayName: displayName
+        displayName: displayName,
       });
-      const newFriends = res.data.content
+
+      const newFriends = res.data.content;
       if (pageNumber === 0) {
         setFriends(newFriends);
       } else {
@@ -79,6 +80,7 @@ const Friends = ({ navigation }: any) => {
       console.error("Error fetching friends:", error);
     } finally {
       setLoadingDialog(false);
+      return;
     }
   }
 
@@ -103,12 +105,12 @@ const Friends = ({ navigation }: any) => {
       fetchData(page + 1);
     }
   };
-  
+
   const renderFriendItem = ({ item }: { item: FriendModel }) => (
-    <FriendItem 
+    <FriendItem
       item={item}
-      navigation = {navigation}
-      onItemDelete = {handleItemDelete}
+      navigation={navigation}
+      onItemDelete={handleItemDelete}
     />
   );
 
@@ -116,42 +118,68 @@ const Friends = ({ navigation }: any) => {
     setFriends((prevFriends) =>
       prevFriends.filter((friend) => friend._id !== itemId)
     );
-  }
+  };
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
-      <TouchableOpacity 
-        style={styles.headerButton} 
-        onPress={() => navigation.navigate("FriendRequest")}
+      <TouchableOpacity
+        style={styles.headerButton}
+        onPress={() => handleFriendRequest()}
       >
-          <View style={styles.buttonContent}>
-            <Ionicons name="person-add-outline" size={24} color="#0084ff" />
-            <Text style={styles.headerButtonText}>Lời mời kết bạn</Text>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{user?.totalFriendRequestsReceived}</Text>
-            </View>
+        <View style={styles.buttonContent}>
+          <Ionicons name="person-add-outline" size={24} color="#0084ff" />
+          <Text style={styles.headerButtonText}>Lời mời kết bạn</Text>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {user?.totalFriendRequestsReceived}
+            </Text>
           </View>
+        </View>
       </TouchableOpacity>
-      <TouchableOpacity 
-        style={styles.headerButton} 
-        onPress={() => navigation.navigate("FriendSendRequest")}
+      <TouchableOpacity
+        style={styles.headerButton}
+        onPress={() => handleFriendSendRequest()}
       >
-         <View style={styles.buttonContent}>
-            <Ionicons name="people-outline" size={24} color="#0084ff" />
-            <Text style={styles.headerButtonText}>Yêu cầu kết bạn</Text>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{user?.totalFriendRequestsSent}</Text>
-            </View>
+        <View style={styles.buttonContent}>
+          <Ionicons name="people-outline" size={24} color="#0084ff" />
+          <Text style={styles.headerButtonText}>Yêu cầu kết bạn</Text>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {user?.totalFriendRequestsSent}
+            </Text>
           </View>
+        </View>
       </TouchableOpacity>
 
       <View style={styles.totalFriendsContainer}>
-        <Text style={styles.totalFriendsText}>
-          Bạn bè ({friends.length})
-        </Text>
+        <Text style={styles.totalFriendsText}>Bạn bè ({friends.length})</Text>
       </View>
     </View>
   );
+
+  const handleAddFriend = () => {
+    navigation.navigate("FriendAdd", {
+      onRefresh: () => {
+        handleRefresh();
+      },
+    });
+  };
+
+  const handleFriendRequest = () => {
+    navigation.navigate("FriendRequest", {
+      onRefresh: () => {
+        handleRefresh();
+      },
+    });
+  };
+
+  const handleFriendSendRequest = () => {
+    navigation.navigate("FriendSendRequest", {
+      onRefresh: () => {
+        handleRefresh();
+      },
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -165,7 +193,7 @@ const Friends = ({ navigation }: any) => {
         placeholder="Tìm kiếm bạn bè..."
         handleClear={clearSearch}
         additionalIcon="add"
-        onAdditionalIconPress={() => navigation.navigate("FriendAdd")}
+        onAdditionalIconPress={() => handleAddFriend()}
       />
 
       <FlatList
@@ -236,14 +264,14 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 16,
     color: "#1c1e21",
-    flex: 1
+    flex: 1,
   },
 
   //Badges
   totalFriendsContainer: {
     backgroundColor: "#fff",
     paddingStart: 0,
-    paddingVertical: 10
+    paddingVertical: 10,
   },
   totalFriendsText: {
     fontSize: 16,
@@ -256,7 +284,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between", // Add this
     width: "100%",
   },
-  
+
   badge: {
     backgroundColor: "#f56e58",
     borderRadius: 12.5,
@@ -272,7 +300,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold",
   },
-
 });
 
 export default Friends;

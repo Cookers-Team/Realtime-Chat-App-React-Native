@@ -19,7 +19,7 @@ import Toast from "react-native-toast-message";
 import { successToast } from "@/src/types/toast";
 
 
-const FriendRequest = ({ navigation }: any) => {
+const FriendRequest = ({ navigation, route }: any) => {
   const { get, loading } = useFetch();
   const [loadingDialog, setLoadingDialog] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -109,7 +109,10 @@ const FriendRequest = ({ navigation }: any) => {
       onItemReject={handleItemRemove}
     />
   );
-
+  const handleGoBack = () => {
+    route.params.onRefresh();
+    navigation.goBack();
+  };
   return (
     <View style={styles.container}>
       
@@ -117,7 +120,7 @@ const FriendRequest = ({ navigation }: any) => {
       <HeaderLayout
         title="Lời mời kết bạn"
         showBackButton={true}
-        onBackPress={() => navigation.goBack()}
+        onBackPress={() => handleGoBack()}
       />
       {loadingDialog && <LoadingDialog isVisible={loadingDialog} />}
 

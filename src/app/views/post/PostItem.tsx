@@ -30,7 +30,7 @@ const PostItem = ({
   onRefresh,
   navigation,
   onCommentPress,
-  setIsTabBarVisible
+  setIsTabBarVisible,
 }: {
   postItem: PostModel;
   onPostUpdate: (post: PostModel) => void;
@@ -48,7 +48,7 @@ const PostItem = ({
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [loadingDialog, setLoadingDialog] = useState(false);
-  
+
   const handleLike = async () => {
     let updatedPost = { ...postItem };
     try {
@@ -75,7 +75,7 @@ const PostItem = ({
       }
     } catch (error) {
       // Revert UI if something goes wrong
-      onPostUpdate(postItem); 
+      onPostUpdate(postItem);
       console.error("Error updating like status:", error);
     }
   };
@@ -106,7 +106,7 @@ const PostItem = ({
       style={styles.imageContainer}
       onPress={() => handleImagePress(index)}
     >
-      <Image source={{ uri: item }} style={styles.postImage}/>
+      <Image source={{ uri: item }} style={styles.postImage} />
       {postItem.imageUrls.length > 1 && (
         <Text style={styles.imageCounter}>{`${index + 1}/${
           postItem.imageUrls.length
@@ -121,15 +121,14 @@ const PostItem = ({
 
   const handleUpdate = () => {
     setShowMenu(false);
-    navigation.navigate("PostCreateUpdate", 
-    { 
-      post_id: postItem._id , 
+    navigation.navigate("PostCreateUpdate", {
+      post_id: postItem._id,
       onPostUpdate: (updatedPost: PostModel | null) => {
         if (updatedPost) {
           handlePostUpdate(updatedPost);
         }
       },
-  }, );
+    });
   };
 
   const handlePostUpdate = (updatedPost: PostModel) => {
@@ -143,12 +142,12 @@ const PostItem = ({
 
   const handleDeleteConfirm = async () => {
     setShowDeleteModal(false);
-    setLoadingDialog(true)
+    setLoadingDialog(true);
     try {
       const response = await del(`/v1/post/delete/${postItem._id}`);
       if (response.result) {
         onPostDelete(postItem._id);
-        Toast.show(successToast("Xóa bài đăng thành công!"))
+        Toast.show(successToast("Xóa bài đăng thành công!"));
       } else {
         throw new Error("Failed to delete post");
       }
@@ -156,7 +155,7 @@ const PostItem = ({
       console.error("Error deleting post:", error);
       Alert.alert("Error", "Failed to delete the post. Please try again.");
     } finally {
-      setLoadingDialog(false)
+      setLoadingDialog(false);
     }
   };
 
@@ -167,7 +166,7 @@ const PostItem = ({
   return (
     <View style={styles.container}>
       <View style={styles.userInfo}>
-      {loadingDialog && <LoadingDialog isVisible={loadingDialog} />}
+        {loadingDialog && <LoadingDialog isVisible={loadingDialog} />}
         <Image
           source={{
             uri: postItem.user.avatarUrl || "https://via.placeholder.com/40",
@@ -176,9 +175,49 @@ const PostItem = ({
         />
         <View style={styles.nameTimeContainer}>
           <Text style={styles.userName}>{postItem.user.displayName}</Text>
+
           <View style={styles.statusTimeContainer}>
             {renderStatusIcon()}
             <Text style={styles.timeAgo}>{postItem.createdAt}</Text>
+            {postItem.status === 2 ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginStart: 5,
+                }}
+              >
+                <Ionicons name="checkmark-circle" size={14} color="#2ecc71" />
+                <Text
+                  style={{
+                    marginHorizontal: 5,
+                    color: "#2ecc71",
+                    fontSize: 12,
+                  }}
+                >
+                  Đã duyệt
+                </Text>
+              </View>
+            ) : (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginStart: 5,
+                }}
+              >
+                <Ionicons name="time-outline" size={14} color="#7f8c8d" />
+                <Text
+                  style={{
+                    marginHorizontal: 5,
+                    color: "#7f8c8d",
+                    fontSize: 12,
+                  }}
+                >
+                  Chưa duyệt
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -216,7 +255,10 @@ const PostItem = ({
             Thích
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={handleCommentPress}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={handleCommentPress}
+        >
           <Ionicons name="chatbubble-outline" size={24} color="#7f8c8d" />
           <Text style={styles.actionText}>Bình luận</Text>
         </TouchableOpacity>
@@ -237,12 +279,13 @@ const PostItem = ({
 
       <MenuClick
         titleUpdate={"Chỉnh sửa bài viết"}
-        titleDelete={"Xóa bài viết"} 
+        titleDelete={"Xóa bài viết"}
         isVisible={showMenu}
         onClose={() => setShowMenu(false)}
         onUpdate={handleUpdate}
-        onDelete={handleDeletePress}      />
-      
+        onDelete={handleDeletePress}
+      />
+
       <ModalConfirm
         isVisible={showDeleteModal}
         title="Bạn sẽ xóa bài viết này chứ?"

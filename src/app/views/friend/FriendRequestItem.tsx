@@ -58,6 +58,8 @@ const FriendRequestItem = ({
     }
   };
 
+ 
+
   return (
     <View style={styles.friendItem}>
       <TouchableOpacity onPress={() => setShowMenuDetail(true)} style={styles.infoContainer}>

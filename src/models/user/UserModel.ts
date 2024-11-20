@@ -9,7 +9,7 @@ export interface UserModel {
   otp: string | null
   bio: string | null
   phone: string | null
-  avatarUrl: string
+  avatarUrl: string | null
   status: string | null
   secretKey: string | null
   role: Role | null

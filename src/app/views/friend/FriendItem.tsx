@@ -55,14 +55,15 @@ const FriendItem = ({ item, navigation, onItemUpdate, onItemDelete }: any) => {
     <View style={styles.friendItem}>
       <Image
         source={
-          item.friend.avatarUrl
+          item.friend && item.friend.avatarUrl
             ? { uri: item.friend.avatarUrl }
             : defaultUserImg
         }
         style={styles.avatar}
       />
       <View style={styles.friendInfo}>
-        <Text style={styles.friendName}>{item.friend.displayName}</Text>
+        
+        <Text style={styles.friendName}> {item.friend.displayName}</Text>
         <Text style={styles.friendLastLogin}>{item.friend.lastLogin}</Text>
       </View>
 

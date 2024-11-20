@@ -18,8 +18,7 @@ import FriendSendRequestItem from "./FriendSendRequestItem";
 import Toast from "react-native-toast-message";
 import { successToast } from "@/src/types/toast";
 
-
-const FriendSendRequest = ({ navigation }: any) => {
+const FriendSendRequest = ({ navigation, route }: any) => {
   const { get, loading } = useFetch();
   const [loadingDialog, setLoadingDialog] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -54,7 +53,7 @@ const FriendSendRequest = ({ navigation }: any) => {
         page: pageNumber,
         size,
         displayName: displayName,
-        getListKind: 2 // For FriendSendRequest
+        getListKind: 2, // For FriendSendRequest
       });
       const newFriends = res.data.content;
       if (pageNumber === 0) {
@@ -94,23 +93,25 @@ const FriendSendRequest = ({ navigation }: any) => {
   const handleItemRemove = (id: string) => {
     Toast.show(successToast("Đã xóa yêu cầu kết bạn!"));
     setFriends((prevFriends) => prevFriends.filter((item) => item._id !== id));
-  }
+  };
 
   const renderFriendItem = ({ item }: { item: FriendModel }) => (
-    <FriendSendRequestItem 
+    <FriendSendRequestItem
       item={item}
       navigation={navigation}
       onItemDelete={handleItemRemove}
     />
   );
-
+  const handleGoBack = () => {
+    route.params.onRefresh();
+    navigation.goBack();
+  };
   return (
     <View style={styles.container}>
-      
       <HeaderLayout
         title="Yêu cầu kết bạn đã gửi"
         showBackButton={true}
-        onBackPress={() => navigation.goBack()}
+        onBackPress={() => handleGoBack()}
       />
       {loadingDialog && <LoadingDialog isVisible={loadingDialog} />}
 
@@ -131,14 +132,16 @@ const FriendSendRequest = ({ navigation }: any) => {
         onRefresh={handleRefresh}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
-        ListEmptyComponent={<EmptyComponent message="Không có yêu cầu kết bạn đã gửi" />}
+        ListEmptyComponent={
+          <EmptyComponent message="Không có yêu cầu kết bạn đã gửi" />
+        }
         ListFooterComponent={() =>
           loading && hasMore ? (
             <ActivityIndicator size="large" color="#007AFF" />
           ) : null
         }
       />
-      <Toast/>
+      <Toast />
     </View>
   );
 };

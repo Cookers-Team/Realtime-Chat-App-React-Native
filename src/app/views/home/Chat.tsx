@@ -20,8 +20,12 @@ import { UserModel } from "@/src/models/user/UserModel";
 import { decrypt } from "@/src/types/utils";
 import { StoryModel } from "@/src/models/story/StoryModel";
 import { StoryItem } from "../story/StoryItem";
+import { remoteUrl } from "@/src/types/constant";
+import { io, Socket } from "socket.io-client";
+import eventBus from "@/src/types/eventBus";
+import { useSocket } from "@/src/components/SocketContext";
 
-const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
+const ChatContent = ({ navigation, setIsTabBarVisiblem, route }: any) => {
   const { get, loading } = useFetch();
   const [loadingDialog, setLoadingDialog] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -33,14 +37,25 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
   const [secretKey, setSecretKey] = useState("");
   const [stories, setStories] = useState<StoryModel[]>([]);
   const size = 10;
-
+  // const { socket, setSocket } = useSocket();
+  const { refreshData } = route.params;
   useEffect(() => {
+    refreshData();
     fetch();
     fetchStories();
+    // Get the refreshData function
+    // console.log("socket", socket);
+    // if (socket) {
+    //   setSocket(socket);
+    //   console.log("Socket connected:", socket.connected);
+    //   socket.on("NEW_NOTIFICATION", async (profile: UserModel) => {
+    //     console.log("NEW_NOTIFICATION IN CHAT");
+    //   });
 
-    const handleNotification = () => {
-      handleRefresh();
-    };
+    //   socket.on("disconnect", () => {
+    //     console.log("Socket disconnected.");
+    //   });
+    // }
   }, []);
 
   const fetch = async () => {
@@ -168,52 +183,54 @@ const ChatContent = ({ navigation, setIsTabBarVisible }: any) => {
     }
   };
 
-  const renderChatItem = ({ item }: { item: ConversationModel }) => (
-    <TouchableOpacity
-      style={styles.chatItem}
-      onPress={() => {
-        navigation.navigate("ChatDetail", {
-          item: item,
-          user: user,
-          onRefresh: () => {
-            handleRefresh();
-          },
-        });
-      }}
-    >
-      <Image
-        source={item.avatarUrl ? { uri: item.avatarUrl } : defaultUserImg}
-        style={styles.avatar}
-      />
-      <View style={styles.chatContent}>
-        <View style={styles.chatHeader}>
-          <Text style={styles.chatName} numberOfLines={1}>
-            {item.name}
-          </Text>
-          <Text style={styles.timestamp}>
-            {item.lastMessage?.createdAt || ""}
-          </Text>
-        </View>
+  const renderChatItem = ({ item }: { item: ConversationModel }) => {
+    return (
+      <TouchableOpacity
+        style={styles.chatItem}
+        onPress={() => {
+          navigation.navigate("ChatDetail", {
+            item: item,
+            user: user,
+            onRefresh: () => {
+              handleRefresh();
+            },
+          });
+        }}
+      >
+        <Image
+          source={item.avatarUrl ? { uri: item.avatarUrl } : defaultUserImg}
+          style={styles.avatar}
+        />
+        <View style={styles.chatContent}>
+          <View style={styles.chatHeader}>
+            <Text style={styles.chatName} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text style={styles.timestamp}>
+              {item.lastMessage?.createdAt || ""}
+            </Text>
+          </View>
 
-        <View style={styles.messageRow}>
-          <Text style={styles.lastMessage} numberOfLines={1}>
-            {/* {decrypt(item.lastMessage?.content, user?.secretKey) || ""} */}
-            {item.lastMessage?.content}
-          </Text>
+          <View style={styles.messageRow}>
+            <Text style={styles.lastMessage} numberOfLines={1}>
+              {/* {decrypt(item.lastMessage?.content, user?.secretKey) || ""} */}
+              {item.lastMessage?.content}
+            </Text>
 
-          {item.totalUnreadMessages > 0 && (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadCount}>
-                {item.totalUnreadMessages > 99
-                  ? "99+"
-                  : item.totalUnreadMessages}
-              </Text>
-            </View>
-          )}
+            {item.totalUnreadMessages > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadCount}>
+                  {item.totalUnreadMessages > 99
+                    ? "99+"
+                    : item.totalUnreadMessages}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const handleStoryPress = (item: StoryModel) => {
     navigation.navigate("StoryDetail", {
