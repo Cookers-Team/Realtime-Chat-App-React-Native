@@ -27,9 +27,7 @@ Example:
 const remoteUrl = "http://localhost:7979";
 ```
 
-### Starting the server
-
-And start it
+### Starting the application
 
 ```sh
 npm start
