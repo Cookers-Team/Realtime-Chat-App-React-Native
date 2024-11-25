@@ -8,6 +8,8 @@ This project serves as the user-facing mobile application for the Zalo UTE syste
 
 ## Installation
 
+To install the dependencies for the project, run the following command:
+
 ```sh
 npm install
 ```
