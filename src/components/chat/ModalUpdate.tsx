@@ -8,13 +8,7 @@ import {
   Modal,
 } from "react-native";
 
-const ModalUpdate = (
-{ 
-  visible,
-  onCancel,
-  onUpdate,
-  initialContent 
-} : any) => {
+const ModalUpdate = ({ visible, onCancel, onUpdate, initialContent }: any) => {
   const [editedContent, setEditedContent] = useState(initialContent);
 
   const handleUpdateCancel = () => {
