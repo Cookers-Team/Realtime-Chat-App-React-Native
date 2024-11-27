@@ -33,29 +33,14 @@ const ChatContent = ({ navigation, setIsTabBarVisiblem }: any) => {
   const [chats, setChats] = useState<ConversationModel[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [page, setPage] = useState(0);
   const [user, setUser] = useState<UserModel>();
   const [secretKey, setSecretKey] = useState("");
   const [stories, setStories] = useState<StoryModel[]>([]);
-  const size = 10;
   const { refreshTrigger } = useRefresh();
   // const { socket, setSocket } = useSocket();
   useEffect(() => {
     fetch();
     fetchStories();
-    // Get the refreshData function
-    // console.log("socket", socket);
-    // if (socket) {
-    //   setSocket(socket);
-    //   console.log("Socket connected:", socket.connected);
-    //   socket.on("NEW_NOTIFICATION", async (profile: UserModel) => {
-    //     console.log("NEW_NOTIFICATION IN CHAT");
-    //   });
-
-    //   socket.on("disconnect", () => {
-    //     console.log("Socket disconnected.");
-    //   });
-    // }
   }, [refreshTrigger]);
 
   const fetch = async () => {
@@ -97,8 +82,7 @@ const ChatContent = ({ navigation, setIsTabBarVisiblem }: any) => {
   async function getChats(pageNumber: number, content: string) {
     try {
       const res = await get(`/v1/conversation/list`, {
-        page: pageNumber,
-        size,
+        isPaged: 0,
         name: content,
       });
       const newChats = res.data.content;
@@ -117,8 +101,6 @@ const ChatContent = ({ navigation, setIsTabBarVisiblem }: any) => {
       } else {
         setChats((prevChats) => [...prevChats, ...newChats]);
       }
-      setHasMore(newChats.length === size);
-      setPage(pageNumber);
     } catch (error) {
       console.error("Error fetching chats:", error);
     } finally {
@@ -133,8 +115,7 @@ const ChatContent = ({ navigation, setIsTabBarVisiblem }: any) => {
   ) {
     try {
       const res = await get(`/v1/conversation/list`, {
-        page: pageNumber,
-        size,
+        isPaged: 0,
         name: content,
       });
       const newChats = res.data.content;
@@ -152,8 +133,7 @@ const ChatContent = ({ navigation, setIsTabBarVisiblem }: any) => {
       } else {
         setChats((prevChats) => [...prevChats, ...newChats]);
       }
-      setHasMore(newChats.length === size);
-      setPage(pageNumber);
+      
     } catch (error) {
       console.error("Error fetching chats:", error);
     } finally {
@@ -166,25 +146,23 @@ const ChatContent = ({ navigation, setIsTabBarVisiblem }: any) => {
       if (!hasMore && pageNumber !== 0) return;
       getChats(pageNumber, searchQuery);
     },
-    [get, size]
+    [get]
   );
 
   const handleRefresh = () => {
     setRefreshing(true);
     setSearchQuery("");
-    setPage(0);
     getChats(0, "").then(() => setRefreshing(false));
     fetchStories();
   };
 
   const handleLoadMore = () => {
     if (hasMore && !loading) {
-      fetchData(page + 1);
     }
   };
 
-  const handleAddFriend = () => {
-    navigation.navigate("FriendAdd", {
+  const handleCreateGroup = () => {
+    navigation.navigate("CreateGroup", {
       onRefresh: () => {
         handleRefresh();
       },
@@ -282,8 +260,9 @@ const ChatContent = ({ navigation, setIsTabBarVisiblem }: any) => {
         placeholder="Tìm kiếm tin nhắn..."
         handleClear={clearSearch}
         additionalIcon="add"
-        onAdditionalIconPress={() => handleAddFriend()}
+        onAdditionalIconPress={() => handleCreateGroup()}
       />
+      
       <View style={styles.storyListContainer}>
         <FlatList
           horizontal

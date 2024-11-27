@@ -11,7 +11,13 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
-import { Send, Plus, ImageIcon } from "lucide-react-native";
+import {
+  Send,
+  Plus,
+  ImageIcon,
+  MoreHorizontal,
+  MoreVertical,
+} from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import useFetch from "../../hooks/useFetch";
 import { LoadingDialog } from "@/src/components/Dialog";
@@ -27,10 +33,13 @@ import MessageItem from "./MessageItem";
 import Toast, { ErrorToast } from "react-native-toast-message";
 import { errorToast } from "@/src/types/toast";
 import eventBus from "@/src/types/eventBus";
+import HeaderLayout2 from "@/src/components/header/HeaderLayout2";
+import MenuManageConversation from "@/src/components/MenuManageConversation";
 
 const ChatDetail = ({ route, navigation }: any) => {
   const item: ConversationModel = route.params?.item;
   const user: UserModel = route.params?.user;
+  const [modalVisible, setModalVisible] = useState(false);
   const { get, post, loading } = useFetch();
   const [messages, setMessages] = useState<MessageModel[]>([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -58,9 +67,7 @@ const ChatDetail = ({ route, navigation }: any) => {
         ),
     });
     fetchMessages(0);
-
     initializeSocket();
-
     return () => {
       if (socketRef.current) {
         socketRef.current.emit("LEAVE_CONVERSATION", item._id);
@@ -156,7 +163,6 @@ const ChatDetail = ({ route, navigation }: any) => {
       socket.emit("JOIN_CONVERSATION", item._id);
     });
 
-  
     socket.on("disconnect", (reason) => {
       console.log("Socket.IO Disconnected:", reason);
     });
@@ -230,8 +236,8 @@ const ChatDetail = ({ route, navigation }: any) => {
       <MessageItem
         item={item}
         userSecretKey={user.secretKey}
-        onItemUpdate={() => {}} //Socket
-        onItemDelete={() => {}} //Socket
+        onItemUpdate={() => {}}
+        onItemDelete={() => {}}
         navigation={navigation}
       />
     );
@@ -242,6 +248,29 @@ const ChatDetail = ({ route, navigation }: any) => {
     navigation.goBack();
   };
 
+  const handleModelVisible = () => {
+    setModalVisible(true);
+  };
+
+  const handleAddMember = () => {
+    console.log("Create");
+    if (item.canAddMember && item.kind === 1) {
+      navigation.navigate("CreateGroup", {
+        onRefresh: () => {
+          handleRefresh();
+        },
+      });
+    }
+  };
+
+  const handlePermissionAddMember = async () => {
+    const data = {
+      id: item._id,
+      canAddMember: item.canAddMember == 1 ? 0 : 1,
+    };
+    await post(`/v1/conversation/permission`, data);
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -250,15 +279,17 @@ const ChatDetail = ({ route, navigation }: any) => {
     >
       {loadingDialog && <LoadingDialog isVisible={loadingDialog} />}
 
-      <HeaderLayout
+      <HeaderLayout2
         title={item.name}
         showBackButton={true}
         onBackPress={() => handleGoBack()}
-        RightIcon={item.canAddMember && item.kind === 1 ? Plus : undefined}
-        onRightIconPress={() =>
-          item.canAddMember &&
-          item.kind === 1 &&
-          navigation.navigate("AddMember", { item })
+        onRightIcon2Press={() => handleAddMember()}
+        onRightIcon1Press={() => handleModelVisible()}
+        RightIcon2={item.canAddMember && item.kind === 1 ? Plus : undefined}
+        RightIcon1={
+          item.canAddMember && item.kind === 1 && item.isOwner
+            ? MoreVertical
+            : undefined
         }
         titleLeft={true}
       />
@@ -281,7 +312,30 @@ const ChatDetail = ({ route, navigation }: any) => {
         contentContainerStyle={styles.flatListContent}
       />
 
-      {(item.canMessage == 1 && item.kind == 1) || item.kind == 2 ? (
+      <MenuManageConversation
+        titleUpdate="Cập nhật"
+        titleDelete="Xóa"
+        isVisible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onUpdate={() => {}}
+        onDelete={() => {}}
+        onAddMemberToggle={() => handlePermissionAddMember()}
+        onMessageToggle={(value) => {
+          // Xử lý khi checkbox nhắn tin thay đổi
+          console.log("Message:", value);
+        }}
+        onUpdateGroupToggle={(value) => {
+          // Xử lý khi checkbox cập nhật nhóm thay đổi
+          console.log("Update Group:", value);
+        }}
+        initialAddMember={true}
+        initialMessage={true}
+        initialUpdateGroup={true}
+      />
+
+      {item.isOwner ||
+      (item.canMessage == 1 && item.kind == 1) ||
+      item.kind == 2 ? (
         <View>
           {selectedImage && (
             <View style={styles.selectedImageContainer}>

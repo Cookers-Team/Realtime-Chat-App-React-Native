@@ -46,6 +46,7 @@ const Home = () => {
       const res = await get("/v1/user/profile");
       // console.log("User data:", res.data);
       setUser(res.data);
+
       setTotalUnreadNotifications(res.data.totalUnreadNotifications);
       setTotalUnreadMessages(res.data.totalUnreadMessages);
     } catch (error) {
@@ -55,9 +56,6 @@ const Home = () => {
 
   useEffect(() => {
     fetchUserData();
-
-    initializeSocket();
-
     return () => {
       if (socketRef.current) {
         // Leave conversation before disconnecting
@@ -66,6 +64,12 @@ const Home = () => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      initializeSocket();
+    }
+  }, [user]); // Re-run the socket initialization when user data changes
 
   const initializeSocket = () => {
     const socket = io(remoteUrl, {
@@ -81,15 +85,18 @@ const Home = () => {
       socket.emit("JOIN_NOTIFICATION", user?._id);
     });
 
+    socket.on("NEW_NOTIFICATION", async (profile: UserModel) => {
+      console.log("NEW_NOTIFICATIO");
+      if (profile.totalUnreadMessages !== totalUnreadMessages) {
+        setTotalUnreadMessages(profile.totalUnreadMessages);
+        setRefreshTrigger((prev) => prev + 1);
+      }
+      if (profile.totalUnreadNotifications !== totalUnreadNotifications) {
+        setTotalUnreadNotifications(profile.totalUnreadNotifications);
+      }
+    });
     socket.on("disconnect", (reason) => {
       console.log("Socket.IO Disconnected:", reason);
-    });
-
-    socket.on("NEW_NOTIFICATION", async (profile: UserModel) => {
-      console.log("NEW_NOTIFICATION");
-      setTotalUnreadMessages(profile.totalUnreadMessages);
-      setTotalUnreadNotifications(profile.totalUnreadNotifications);
-      setRefreshTrigger((prev) => prev + 1);
     });
     socketRef.current = socket;
   };

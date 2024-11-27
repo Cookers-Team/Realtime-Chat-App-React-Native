@@ -18,6 +18,7 @@ import ModalConfirm from "@/src/components/post/ModalConfirm";
 import Toast from "react-native-toast-message";
 import { successToast } from "@/src/types/toast";
 import EmptyComponent from "@/src/components/empty/EmptyComponent";
+import { useRefresh } from "./RefreshContext";
 
 const Notification = ({ navigation }: any) => {
   const { get, del, put, loading } = useFetch();
@@ -28,6 +29,7 @@ const Notification = ({ navigation }: any) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [page, setPage] = useState(0);
+  const { refreshTrigger } = useRefresh();
 
   const size = 10;
 
@@ -39,14 +41,17 @@ const Notification = ({ navigation }: any) => {
           page: pageNumber,
           size,
         };
-       
+
         const res = await get(`/v1/notification/list`, params);
-        
+
         const newNotifications = res.data.content;
         if (pageNumber === 0) {
           setNotifications(newNotifications);
         } else {
-          setNotifications((prevNotifications) => [...prevNotifications, ...newNotifications]);
+          setNotifications((prevNotifications) => [
+            ...prevNotifications,
+            ...newNotifications,
+          ]);
         }
         setHasMore(newNotifications.length === size);
         setPage(pageNumber);
@@ -74,25 +79,23 @@ const Notification = ({ navigation }: any) => {
   useEffect(() => {
     setPage(0);
     fetchNotifications(0);
-  }, []);
+  }, [refreshTrigger]);
 
   const renderEmptyComponent = () => (
     <EmptyComponent message="Không có thông báo nào" />
   );
 
-  const handleItemClick = (itemId: string) => (
-    {}
-  )
+  const handleItemClick = (itemId: string) => ({});
 
   const handleReadAll = async () => {
     setShowMenu(false);
-    setLoadingDialog(true)
+    setLoadingDialog(true);
     try {
       const response = await put(`/v1/notification/read-all`);
       if (response.result) {
-        Toast.show(successToast("Toàn bộ thông báo đánh dấu đã đọc!"))
-        setNotifications([])
-        fetchNotifications(0)
+        Toast.show(successToast("Toàn bộ thông báo đánh dấu đã đọc!"));
+        setNotifications([]);
+        fetchNotifications(0);
       } else {
         throw new Error("Failed to read all notification");
       }
@@ -100,7 +103,7 @@ const Notification = ({ navigation }: any) => {
       console.error("Error deleting post:", error);
       Alert.alert("Error", "Lỗi đọc toàn bộ thông báo!.");
     } finally {
-      setLoadingDialog(false)
+      setLoadingDialog(false);
     }
   };
 
@@ -115,11 +118,11 @@ const Notification = ({ navigation }: any) => {
 
   const handleDeleteConfirm = async () => {
     setShowDeleteModal(false);
-    setLoadingDialog(true)
+    setLoadingDialog(true);
     try {
       const response = await del(`/v1/notification/delete-all`);
       if (response.result) {
-        Toast.show(successToast("Xóa toàn bộ thông báo thành công!"))
+        Toast.show(successToast("Xóa toàn bộ thông báo thành công!"));
         fetchNotifications(0);
       } else {
         throw new Error("Failed to delete post");
@@ -128,48 +131,50 @@ const Notification = ({ navigation }: any) => {
       console.error("Error deleting post:", error);
       Alert.alert("Error", "Lỗi xóa toàn bộ thông báo!.");
     } finally {
-      setLoadingDialog(false)
+      setLoadingDialog(false);
     }
   };
 
   const renderItem = ({ item }: { item: NotificationModel }) => (
-    <View style={{marginVertical: 0}}>
+    <View style={{ marginVertical: 0 }}>
       <NotificationItem item={item} onItemClick={handleItemClick} />
     </View>
   );
 
   return (
     <View className="flex-1">
-     <HeaderLayout 
+      <HeaderLayout
         title="Thông báo"
         showBackButton={false}
-        onBackPress={()=>{}}
+        onBackPress={() => {}}
         RightIcon={Menu}
-        onRightIconPress={()=>setShowMenu(true)}
+        onRightIconPress={() => setShowMenu(true)}
       />
-    {loadingDialog && <LoadingDialog isVisible={loadingDialog} />}
-    <FlatList
-      data={notifications}
-      keyExtractor={(item, index) => `${item._id}-${index}`}
-      style={styles.listContainer}
-      renderItem={renderItem}
-      refreshing={refreshing}
-      onRefresh={handleRefresh}
-      onEndReached={handleLoadMore}
-      onEndReachedThreshold={0.5}
-      ListEmptyComponent={renderEmptyComponent}
-      ListFooterComponent={() => 
-        loading && hasMore ? <ActivityIndicator size="large" color="#007AFF" /> : null
-      }
+      {loadingDialog && <LoadingDialog isVisible={loadingDialog} />}
+      <FlatList
+        data={notifications}
+        keyExtractor={(item, index) => `${item._id}-${index}`}
+        style={styles.listContainer}
+        renderItem={renderItem}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListEmptyComponent={renderEmptyComponent}
+        ListFooterComponent={() =>
+          loading && hasMore ? (
+            <ActivityIndicator size="large" color="#007AFF" />
+          ) : null
+        }
       />
-      <MenuClick 
+      <MenuClick
         titleUpdate={"Đánh dấu tất cả đã đọc"}
         titleDelete={"Xóa toàn bộ thông báo"}
         isVisible={showMenu}
         onClose={() => setShowMenu(false)}
         onUpdate={handleReadAll}
-        onDelete={handleDeletePress}  
-        />
+        onDelete={handleDeletePress}
+      />
 
       <ModalConfirm
         isVisible={showDeleteModal}
@@ -178,8 +183,6 @@ const Notification = ({ navigation }: any) => {
         onConfirm={handleDeleteConfirm}
       />
     </View>
-    
-    
   );
 };
 
@@ -187,15 +190,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
   listContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
   notificationItem: {
     backgroundColor: "#ffffff",
-    paddingHorizontal:15,
+    paddingHorizontal: 15,
     flexDirection: "row",
     alignItems: "center",
   },
