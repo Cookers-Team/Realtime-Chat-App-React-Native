@@ -35,6 +35,9 @@ const Stack = createNativeStackNavigator<{
   StoryAdd: any;
   StoryDetail: any;
   CreateGroup: any;
+  UpdateGroup: any;
+  AddMember: any;
+  WatchMember: any;
 }>();
 
 const Tab = createBottomTabNavigator();

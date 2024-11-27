@@ -17,6 +17,12 @@ import {
   ImageIcon,
   MoreHorizontal,
   MoreVertical,
+  Lock,
+  Edit,
+  Edit2,
+  Edit3Icon,
+  Edit2Icon,
+  EditIcon,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import useFetch from "../../hooks/useFetch";
@@ -31,16 +37,20 @@ import { remoteUrl } from "@/src/types/constant";
 import { io, Socket } from "socket.io-client";
 import MessageItem from "./MessageItem";
 import Toast, { ErrorToast } from "react-native-toast-message";
-import { errorToast } from "@/src/types/toast";
+import { errorToast, successToast } from "@/src/types/toast";
 import eventBus from "@/src/types/eventBus";
 import HeaderLayout2 from "@/src/components/header/HeaderLayout2";
 import MenuManageConversation from "@/src/components/MenuManageConversation";
+import { useRefresh } from "../home/RefreshContext";
+import { set } from "lodash";
+import MenuClick from "@/src/components/post/MenuClick";
+import ModalConfirm from "@/src/components/post/ModalConfirm";
 
 const ChatDetail = ({ route, navigation }: any) => {
-  const item: ConversationModel = route.params?.item;
+  const [item, setItem] = useState<ConversationModel>(route.params?.item);
   const user: UserModel = route.params?.user;
   const [modalVisible, setModalVisible] = useState(false);
-  const { get, post, loading } = useFetch();
+  const { get, post, put, del, loading } = useFetch();
   const [messages, setMessages] = useState<MessageModel[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -51,21 +61,28 @@ const ChatDetail = ({ route, navigation }: any) => {
   const flatListRef = useRef<FlatList>(null);
   const socketRef = useRef<Socket | null>(null);
   const size = 10;
+  const { refreshTrigger } = useRefresh();
+
+  const [canAddMember, setCanAddMember] = useState(item.canAddMember);
+  const [canMessage, setCanMessage] = useState(item.canMessage);
+  const [canUpdate, setCanUpdate] = useState(item.canUpdate);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
-    navigation.setOptions({
-      title: item.name,
-      headerRight: () =>
-        item.canAddMember &&
-        item.kind == 1 && (
-          <TouchableOpacity
-            onPress={() => navigation.navigate("AddMember", { item })}
-            style={styles.headerButton}
-          >
-            <Plus size={24} color="#059BF0" />
-          </TouchableOpacity>
-        ),
-    });
+    // navigation.setOptions({
+    //   title: item.name,
+    //   headerRight: () =>
+    //     item.canAddMember &&
+    //     item.kind == 1 && (
+    //       <TouchableOpacity
+    //         onPress={() => navigation.navigate("AddMember", { item })}
+    //         style={styles.headerButton}
+    //       >
+    //         <Plus size={24} color="#059BF0" />
+    //       </TouchableOpacity>
+    //     ),
+    // });
+
     fetchMessages(0);
     initializeSocket();
     return () => {
@@ -76,6 +93,23 @@ const ChatDetail = ({ route, navigation }: any) => {
       eventBus.off("REFRESH_DATA", handleRefresh);
     };
   }, []);
+
+  useEffect(() => {
+    fetchConversation();
+  }, [refreshTrigger]);
+
+  const fetchConversation = async () => {
+    try {
+      const res = await get(`/v1/conversation/get/${item._id}`);
+      setItem(res.data);
+      console.log("item", res.data);
+      setCanAddMember(res.data.canAddMember);
+      setCanMessage(res.data.canMessage);
+      setCanUpdate(res.data.canUpdate);
+    } catch (error) {
+      console.error("Error fetching conversation data:", error);
+    }
+  };
 
   const fetchNewMessage = async (messageId: string) => {
     try {
@@ -140,6 +174,7 @@ const ChatDetail = ({ route, navigation }: any) => {
 
   const handleRefresh = () => {
     setRefreshing(true);
+    fetchConversation();
     fetchMessages(0).then(() => setRefreshing(false));
   };
 
@@ -161,7 +196,13 @@ const ChatDetail = ({ route, navigation }: any) => {
       console.log("Socket.IO Connected");
       // Join conversation room on connect
       socket.emit("JOIN_CONVERSATION", item._id);
+      // socket.emit("JOIN_NOTIFICATION", user._id);
     });
+
+    // socket.on("NEW_NOTIFICATION", async (profile: UserModel) => {
+    //   console.log("NEW_NOTIFICATION_CHAT");
+    //   fetchConversation();
+    // });
 
     socket.on("disconnect", (reason) => {
       console.log("Socket.IO Disconnected:", reason);
@@ -253,22 +294,95 @@ const ChatDetail = ({ route, navigation }: any) => {
   };
 
   const handleAddMember = () => {
-    console.log("Create");
-    if (item.canAddMember && item.kind === 1) {
-      navigation.navigate("CreateGroup", {
-        onRefresh: () => {
-          handleRefresh();
-        },
-      });
-    }
+    navigation.navigate("AddMember", {
+      item: item,
+      user: user,
+      onRefresh: () => {
+        handleRefresh();
+      },
+    });
   };
 
   const handlePermissionAddMember = async () => {
+    setLoadingDialog(true);
     const data = {
       id: item._id,
-      canAddMember: item.canAddMember == 1 ? 0 : 1,
+      canAddMember: canAddMember ? 0 : 1,
     };
-    await post(`/v1/conversation/permission`, data);
+    setCanAddMember(canAddMember ? 0 : 1);
+    await put(`/v1/conversation/permission`, data);
+    setLoadingDialog(false);
+  };
+  const handlePermissionCanMessage = async () => {
+    setLoadingDialog(true);
+    const data = {
+      id: item._id,
+      canMessage: canMessage ? 0 : 1,
+    };
+    setCanMessage(canMessage ? 0 : 1);
+    await put(`/v1/conversation/permission`, data);
+    setLoadingDialog(false);
+  };
+  const handlePermissionCanUpdate = async () => {
+    setLoadingDialog(true);
+    const data = {
+      id: item._id,
+      canUpdate: canUpdate ? 0 : 1,
+    };
+    setCanUpdate(canUpdate ? 0 : 1);
+    await put(`/v1/conversation/permission`, data);
+    setLoadingDialog(false);
+  };
+
+  const handleUpdateConversation = async () => {
+    setModalVisible(false);
+    navigation.navigate("UpdateGroup", {
+      item,
+      onRefresh: () => {
+        handleRefresh();
+      },
+    });
+  };
+
+  const handleDeleteConversation = async () => {
+    setLoadingDialog(true);
+    const res = await del(`/v1/conversation/delete/${item._id}`);
+    if (res.result) {
+      Toast.show(successToast("Xóa cuộc trò chuyện thành công"));
+    }
+    setLoadingDialog(false);
+    handleGoBack();
+  };
+
+  const handleSettingConversation = () => {
+    if (item.isOwner) {
+      handleModelVisible();
+    } else {
+      if (canUpdate) {
+        handleUpdateConversation();
+      }
+    }
+  };
+
+  const getIcon = () => {
+    if (item.isOwner) {
+      return MoreVertical;
+    } else {
+      if (canUpdate) {
+        return Edit;
+      }
+    }
+    return null;
+  };
+
+  const handleWatchMembers = () => {
+    navigation.navigate("WatchMember", {
+      item,
+      user,
+      onRefresh: () => {
+        handleRefresh();
+      },
+    });
   };
 
   return (
@@ -281,19 +395,19 @@ const ChatDetail = ({ route, navigation }: any) => {
 
       <HeaderLayout2
         title={item.name}
+        subtitle={item.kind == 1 && item.totalMembers + " thành viên"}
+        onTitlePress={() => handleWatchMembers()}
         showBackButton={true}
         onBackPress={() => handleGoBack()}
         onRightIcon2Press={() => handleAddMember()}
-        onRightIcon1Press={() => handleModelVisible()}
-        RightIcon2={item.canAddMember && item.kind === 1 ? Plus : undefined}
-        RightIcon1={
-          item.canAddMember && item.kind === 1 && item.isOwner
-            ? MoreVertical
-            : undefined
+        onRightIcon1Press={() => handleSettingConversation()}
+        RightIcon2={
+          item.isOwner || (canAddMember && item.kind === 1) ? Plus : null
         }
+        RightIcon1={getIcon()}
         titleLeft={true}
       />
-      <Toast />
+
       <FlatList
         ref={flatListRef}
         data={messages}
@@ -313,29 +427,32 @@ const ChatDetail = ({ route, navigation }: any) => {
       />
 
       <MenuManageConversation
-        titleUpdate="Cập nhật"
-        titleDelete="Xóa"
+        titleUpdate="Cập nhật cuộc trò truyện"
+        titleDelete="Xóa cuộc trò truyện"
         isVisible={modalVisible}
         onClose={() => setModalVisible(false)}
-        onUpdate={() => {}}
-        onDelete={() => {}}
+        onUpdate={() => handleUpdateConversation()}
+        onDelete={() => setShowDeleteModal(true)}
         onAddMemberToggle={() => handlePermissionAddMember()}
-        onMessageToggle={(value) => {
-          // Xử lý khi checkbox nhắn tin thay đổi
-          console.log("Message:", value);
+        onMessageToggle={() => {
+          handlePermissionCanMessage();
         }}
-        onUpdateGroupToggle={(value) => {
-          // Xử lý khi checkbox cập nhật nhóm thay đổi
-          console.log("Update Group:", value);
+        onUpdateGroupToggle={() => {
+          handlePermissionCanUpdate();
         }}
-        initialAddMember={true}
-        initialMessage={true}
-        initialUpdateGroup={true}
+        initialAddMember={!!canAddMember}
+        initialMessage={!!canMessage}
+        initialUpdateGroup={!!canUpdate}
       />
 
-      {item.isOwner ||
-      (item.canMessage == 1 && item.kind == 1) ||
-      item.kind == 2 ? (
+      <ModalConfirm
+        isVisible={showDeleteModal}
+        title="Xác cuộc trò chuyện này?"
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteConversation}
+      />
+
+      {item.isOwner || (canMessage == 1 && item.kind == 1) || item.kind == 2 ? (
         <View>
           {selectedImage && (
             <View style={styles.selectedImageContainer}>
@@ -376,7 +493,18 @@ const ChatDetail = ({ route, navigation }: any) => {
             </TouchableOpacity>
           </View>
         </View>
-      ) : null}
+      ) : (
+        <View style={styles.noPermissionContainer}>
+          <Lock size={48} color="#999" />
+          <Text style={styles.noPermissionTitle}>
+            Bạn không có quyền nhắn tin
+          </Text>
+          <Text style={styles.noPermissionSubtitle}>
+            Trong cuộc trò chuyện này, bạn hiện không được phép gửi tin nhắn.
+          </Text>
+        </View>
+      )}
+      <Toast />
     </KeyboardAvoidingView>
   );
 };
@@ -503,6 +631,26 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: "center",
     alignItems: "center",
+  },
+  noPermissionContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#f5f5f5",
+  },
+  noPermissionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginTop: 15,
+    textAlign: "center",
+  },
+  noPermissionSubtitle: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 10,
+    textAlign: "center",
   },
 });
 

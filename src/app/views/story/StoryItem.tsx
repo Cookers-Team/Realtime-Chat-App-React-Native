@@ -19,7 +19,7 @@ export const StoryItem = ({ item, onPress }: any) => (
       />
     </View>
     <Text numberOfLines={1} style={styles.storyUsername}>
-      {item.isOwner ? "Tin của bạn" : item.user.username}
+      {item.isOwner ? "Tin của bạn" : item.user.displayName}
     </Text>
   </TouchableOpacity>
 );

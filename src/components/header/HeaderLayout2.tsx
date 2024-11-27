@@ -4,6 +4,8 @@ import { ChevronLeft } from "lucide-react-native";
 
 const HeaderLayout2 = ({
   title,
+  subtitle,
+  onTitlePress,
   RightIcon1,
   RightIcon2,
   onRightIcon1Press,
@@ -28,23 +30,37 @@ const HeaderLayout2 = ({
           </TouchableOpacity>
         )}
         {titleLeft && (
-          <Text
-            style={[
-              styles.title,
-              styles.leftTitle,
-              showBackButton && styles.titleWithBack,
-            ]}
-            numberOfLines={1}
+          <TouchableOpacity
+            onPress={onTitlePress}
+            style={styles.titleWrapper}
+            disabled={!onTitlePress}
           >
-            {title}
-          </Text>
+            <Text
+              style={[
+                styles.title,
+                styles.leftTitle,
+                showBackButton && styles.titleWithBack,
+              ]}
+              numberOfLines={1}
+            >
+              {title}
+            </Text>
+            {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+          </TouchableOpacity>
         )}
       </View>
       {!titleLeft && (
         <View style={styles.titleContainer}>
-          <Text style={styles.title} numberOfLines={1}>
-            {title}
-          </Text>
+          <TouchableOpacity
+            onPress={onTitlePress}
+            style={styles.titleWrapper}
+            disabled={!onTitlePress}
+          >
+            <Text style={styles.title} numberOfLines={1}>
+              {title}
+            </Text>
+            {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+          </TouchableOpacity>
         </View>
       )}
       <View style={styles.rightContainer}>
@@ -73,7 +89,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     justifyContent: "space-between",
-    height: 60,
+    height: 70, // Increased height to accommodate subtitle
     alignItems: "center",
     paddingHorizontal: 12,
     backgroundColor: "#059BF0",
@@ -93,6 +109,9 @@ const styles = StyleSheet.create({
     flex: 2,
     alignItems: "center",
   },
+  titleWrapper: {
+    alignItems: "flex-start",
+  },
   rightContainer: {
     flex: 1,
     alignItems: "center",
@@ -103,6 +122,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     color: "#fff",
+  },
+  subtitle: {
+    fontSize: 12,
+    color: "#fff",
+    opacity: 0.8,
+    marginTop: 2,
+    marginLeft: 8,
   },
   leftTitle: {
     textAlign: "left",

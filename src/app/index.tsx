@@ -25,6 +25,9 @@ import StoryAdd from "./views/story/StoryAdd";
 import StoryDetail from "./views/story/StoryDetail";
 import { RefreshProvider } from "./views/home/RefreshContext";
 import CreateGroup from "./views/chat/CreateGroup";
+import UpdateGroup from "./views/chat/UpdateGroup";
+import AddMember from "./views/chat/AddMember";
+import WatchMember from "./views/chat/WatchMember";
 
 const AppNavigator = ({ isAuthenticated }: any) => (
   <Stack.Navigator
@@ -53,6 +56,9 @@ const AppNavigator = ({ isAuthenticated }: any) => (
     <Stack.Screen name="StoryAdd" component={StoryAdd} />
     <Stack.Screen name="StoryDetail" component={StoryDetail} />
     <Stack.Screen name="CreateGroup" component={CreateGroup} />
+    <Stack.Screen name="UpdateGroup" component={UpdateGroup} />
+    <Stack.Screen name="AddMember" component={AddMember} />
+    <Stack.Screen name="WatchMember" component={WatchMember} />
   </Stack.Navigator>
 );
 
