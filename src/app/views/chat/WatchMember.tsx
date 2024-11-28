@@ -6,16 +6,19 @@ import {
   StyleSheet,
   Image,
   ScrollView,
+  Alert,
 } from "react-native";
 import useFetch from "../../hooks/useFetch";
 import { LoadingDialog } from "@/src/components/Dialog";
 import Toast from "react-native-toast-message";
-import { errorToast } from "@/src/types/toast";
+import { errorToast, successToast } from "@/src/types/toast";
 import HeaderLayout from "@/src/components/header/Header";
 import { avatarDefault } from "@/src/types/constant";
 import { ConversationModel } from "@/src/models/chat/ConversationModel";
 import { UserModel } from "@/src/models/user/UserModel";
 import { MemberModel } from "@/src/models/chat/MemberModel";
+import ModalConfirm from "@/src/components/post/ModalConfirm";
+import { router } from "expo-router";
 
 const WatchMember = ({
   navigation,
@@ -28,7 +31,9 @@ const WatchMember = ({
   const user: UserModel = route.params.user;
   const [members, setMembers] = useState<MemberModel[]>([]);
   const [loadingDialog, setLoadingDialog] = useState(false);
-  const { get } = useFetch();
+  const [showDeleteModal, setShowDeleteModel] = useState(false);
+  const [currentMemberId, setCurrentMemberId] = useState("");
+  const { get, del } = useFetch();
 
   useEffect(() => {
     fetchMembers();
@@ -40,7 +45,6 @@ const WatchMember = ({
       const response = await get(
         `/v1/conversation-member/list?isPaged=0&conversation=${item._id}`
       );
-      console.log("response", response.data.content);
       if (response.result) {
         setMembers(response.data.content);
       }
@@ -51,11 +55,32 @@ const WatchMember = ({
     setLoadingDialog(false);
   };
 
-  const getMemberRole = (member: MemberModel) => {
-    if (member.isOwner) return "Quản trị viên";
-    return "Thành viên";
+  const handleDeleteConversation = async (id: string) => {
+    setShowDeleteModel(false);
+    setLoadingDialog(true);
+    try {
+      const response = await del(`/v1/conversation-member/remove/${id}`);
+      if (response.result) {
+        Toast.show(successToast("Xóa thành viên thành công"));
+        fetchMembers();
+      }
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      Toast.show(errorToast("Không thể xóa thành viên"));
+    }
+    setLoadingDialog(false);
   };
 
+  // Find if current user is owner
+  const currentUserMember = members.find(
+    (member) => member.user?._id === user._id
+  );
+  const isCurrentUserOwner = currentUserMember?.isOwner;
+
+  const handleGoBack = () => {
+    route.params.onRefresh();
+    navigation.goBack();
+  };
   return (
     <View style={styles.container}>
       {loadingDialog && <LoadingDialog isVisible={loadingDialog} />}
@@ -63,13 +88,13 @@ const WatchMember = ({
       <HeaderLayout
         title="Thành Viên Nhóm"
         showBackButton={true}
-        onBackPress={() => navigation.goBack()}
+        onBackPress={() => handleGoBack()}
       />
 
       <ScrollView contentContainerStyle={styles.memberListContainer}>
         {members.map((item) => {
-          const displayName = item.user?.displayName || "Tên không xác định"; // Added fallback value
-          const isOwner = item.isOwner ? "QTV" : "Thành viên"; // Ensure a valid string for role
+          const displayName = item.user?.displayName || "Tên không xác định";
+          const isOwner = item.isOwner ? "Quản trị viên" : "Thành viên";
 
           return (
             <View key={item._id} style={styles.memberItem}>
@@ -88,9 +113,31 @@ const WatchMember = ({
                 </Text>
                 <Text style={styles.memberRole}>{isOwner}</Text>
               </View>
+              {isCurrentUserOwner &&
+              !item.isOwner &&
+              item.user?._id !== user._id &&
+              members.length > 3 ? (
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => {
+                    setShowDeleteModel(true);
+                    setCurrentMemberId(item._id);
+                  }}
+                >
+                  <Text style={styles.removeButtonText}>Xóa</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           );
         })}
+        <ModalConfirm
+          isVisible={showDeleteModal}
+          title="Xác cuộc trò chuyện này?"
+          onClose={() => setShowDeleteModel(false)}
+          onConfirm={() => {
+            handleDeleteConversation(currentMemberId);
+          }}
+        />
       </ScrollView>
     </View>
   );
@@ -133,6 +180,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginTop: 2,
+  },
+  removeButton: {
+    backgroundColor: "#FF3B30",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginLeft: 10,
+  },
+  removeButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "500",
   },
   adminBadge: {
     backgroundColor: "#059BF0",

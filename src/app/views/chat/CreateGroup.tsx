@@ -93,8 +93,6 @@ const CreateGroup = ({
       return;
     }
 
-    setLoadingDialog(true);
-
     try {
       // Prepare group data
       const groupData: {
@@ -112,9 +110,20 @@ const CreateGroup = ({
         groupData.avatarUrl = uploadResult;
       }
 
+      if (groupData.conversationMembers.length <= 1) {
+        ToastAndroid.show(
+          "Vui lòng thêm ít nhất 2 thành viên",
+          ToastAndroid.SHORT
+        );
+        return;
+      }
+
       // Create group
+      setLoadingDialog(true);
       const response = await post("/v1/conversation/create", groupData);
-      console.log("Group created:", response);
+      if (!response.result) {
+        throw new Error("Failed to create group");
+      }
       Toast.show(successToast("Nhóm đã được tạo"));
       route.params.onRefresh();
       navigation.goBack();

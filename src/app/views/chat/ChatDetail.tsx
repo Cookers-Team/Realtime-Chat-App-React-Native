@@ -494,16 +494,13 @@ const ChatDetail = ({ route, navigation }: any) => {
           </View>
         </View>
       ) : (
-        <View style={styles.noPermissionContainer}>
-          <Lock size={48} color="#999" />
-          <Text style={styles.noPermissionTitle}>
+        <View style={styles.noMessagePermissionContainer}>
+          <Text style={styles.noMessagePermissionText}>
             Bạn không có quyền nhắn tin
-          </Text>
-          <Text style={styles.noPermissionSubtitle}>
-            Trong cuộc trò chuyện này, bạn hiện không được phép gửi tin nhắn.
           </Text>
         </View>
       )}
+
       <Toast />
     </KeyboardAvoidingView>
   );
@@ -651,6 +648,21 @@ const styles = StyleSheet.create({
     color: "#666",
     marginTop: 10,
     textAlign: "center",
+  },
+  noMessagePermissionContainer: {
+    backgroundColor: "#f8f8f8",
+    padding: 15,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    alignItems: "center",
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  noMessagePermissionText: {
+    color: "#666",
+    fontSize: 14,
   },
 });
 
