@@ -198,7 +198,7 @@ const PostItem = ({
                   Đã duyệt
                 </Text>
               </View>
-            ) : (
+            ) : postItem.status === 1 ? (
               <View
                 style={{
                   flexDirection: "row",
@@ -215,6 +215,25 @@ const PostItem = ({
                   }}
                 >
                   Chưa duyệt
+                </Text>
+              </View>
+            ) : (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginStart: 5,
+                }}
+              >
+                <Ionicons name="close-circle" size={14} color="#e74c3c" />
+                <Text
+                  style={{
+                    marginHorizontal: 5,
+                    color: "#e74c3c",
+                    fontSize: 12,
+                  }}
+                >
+                  Từ chối
                 </Text>
               </View>
             )}

@@ -68,6 +68,8 @@ const ChatDetail = ({ route, navigation }: any) => {
   const [canUpdate, setCanUpdate] = useState(item.canUpdate);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  const [sending, setSending] = useState(false);
+
   useEffect(() => {
     // navigation.setOptions({
     //   title: item.name,
@@ -242,7 +244,8 @@ const ChatDetail = ({ route, navigation }: any) => {
       Toast.show(errorToast("Bạn chưa điền nội dung!"));
       return;
     }
-    setLoadingDialog(true);
+    // setLoadingDialog(true);
+    setSending(true);
     try {
       let messageData: any = {
         conversation: item._id,
@@ -268,7 +271,7 @@ const ChatDetail = ({ route, navigation }: any) => {
     } catch (error) {
       console.error("Error sending message:", error);
     } finally {
-      setLoadingDialog(false);
+      setSending(false);
     }
   };
 
@@ -482,7 +485,7 @@ const ChatDetail = ({ route, navigation }: any) => {
             <TouchableOpacity
               style={styles.sendButton}
               onPress={sendMessage}
-              disabled={!inputMessage.trim() && !selectedImage}
+              disabled={(!inputMessage.trim() && !selectedImage) || sending}
             >
               <Send
                 size={24}
