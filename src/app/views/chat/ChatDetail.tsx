@@ -487,12 +487,16 @@ const ChatDetail = ({ route, navigation }: any) => {
               onPress={sendMessage}
               disabled={(!inputMessage.trim() && !selectedImage) || sending}
             >
-              <Send
-                size={24}
-                color={
-                  inputMessage.trim() || selectedImage ? "#059BF0" : "#999"
-                }
-              />
+              {sending ? (
+                <ActivityIndicator size="small" color="#059BF0" />
+              ) : (
+                <Send
+                  size={24}
+                  color={
+                    inputMessage.trim() || selectedImage ? "#059BF0" : "#999"
+                  }
+                />
+              )}
             </TouchableOpacity>
           </View>
         </View>
