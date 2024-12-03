@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { FriendModel } from "@/src/models/friend/FriendModel";
@@ -17,15 +18,24 @@ import useFetch from "../../hooks/useFetch";
 import ModalUserDetail from "@/src/components/friend/ModalUserDetail";
 import ModalConfirm from "@/src/components/post/ModalConfirm";
 
-const FriendItem = ({ item, navigation, onItemUpdate, onItemDelete }: any) => {
-  const { post, del, loading } = useFetch();
+const FriendItem = ({
+  item,
+  navigation,
+  onItemUpdate,
+  onItemDelete,
+  onItemFollow,
+}: any) => {
+  const { post, del, loading, put } = useFetch();
   const [showMenu, setShowMenu] = useState(false);
   const [showMenuDetail, setShowMenuDetail] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(item.isFollowed || false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [loadingDialog, setLoadingDialog] = useState(false);
+
   const handleMenuPress = () => {
     setShowMenu(!showMenu);
   };
-  const [loadingDialog, setLoadingDialog] = useState(false);
 
   const handleDeletePress = () => {
     setShowMenu(false);
@@ -51,6 +61,27 @@ const FriendItem = ({ item, navigation, onItemUpdate, onItemDelete }: any) => {
     }
   };
 
+  const handleFollowToggle = async () => {
+    setFollowLoading(true);
+    try {
+      // Unfollow logic
+      const response = await put(`/v1/friendship/follow/`, {
+        friendship: item._id,
+      });
+      console.log("res", response);
+      if (response.result) {
+        setIsFollowing(!isFollowing);
+        onItemFollow(item._id);
+        Toast.show(successToast("Đã bỏ theo dõi!"));
+      }
+    } catch (error) {
+      console.error("Lỗi thao tác theo dõi:", error);
+      Alert.alert("Lỗi", "Không thể thực hiện thao tác. Vui lòng thử lại.");
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
   return (
     <View style={styles.friendItem}>
       <Image
@@ -62,10 +93,26 @@ const FriendItem = ({ item, navigation, onItemUpdate, onItemDelete }: any) => {
         style={styles.avatar}
       />
       <View style={styles.friendInfo}>
-        
-        <Text style={styles.friendName}> {item.friend.displayName}</Text>
+        <Text style={styles.friendName}>{item.friend.displayName}</Text>
         <Text style={styles.friendLastLogin}>{item.friend.lastLogin}</Text>
       </View>
+
+      <TouchableOpacity
+        style={[
+          styles.followButton,
+          isFollowing ? styles.followingButton : styles.notFollowingButton,
+        ]}
+        onPress={handleFollowToggle}
+        disabled={followLoading}
+      >
+        {followLoading ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.followButtonText}>
+            {isFollowing ? "Đang theo dõi" : "Theo dõi"}
+          </Text>
+        )}
+      </TouchableOpacity>
 
       <TouchableOpacity style={styles.menuIcon} onPress={handleMenuPress}>
         <Ionicons name="ellipsis-horizontal" size={20} color="#7f8c8d" />
@@ -129,12 +176,25 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   menuIcon: {
-    position: "absolute",
-    top: 10,
-    right: 0,
-    zIndex: 1,
-    paddingHorizontal: 20,
-    paddingBottom: 10,
+    padding: 10,
+    marginLeft: 5,
+  },
+  followButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  followingButton: {
+    backgroundColor: "#2ecc71",
+  },
+  notFollowingButton: {
+    backgroundColor: "#3498db",
+  },
+  followButtonText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
   },
 });
 

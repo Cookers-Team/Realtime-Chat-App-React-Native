@@ -111,8 +111,17 @@ const Friends = ({ navigation }: any) => {
       item={item}
       navigation={navigation}
       onItemDelete={handleItemDelete}
+      onItemFollow={handleItemFollow}
     />
   );
+
+  const handleItemFollow = (itemId: string) => {
+    setFriends((prevFriends) =>
+      prevFriends.map((friend) =>
+        friend._id === itemId ? { ...friend, isFollowed: 1 } : friend
+      )
+    );
+  };
 
   const handleItemDelete = (itemId: string) => {
     setFriends((prevFriends) =>

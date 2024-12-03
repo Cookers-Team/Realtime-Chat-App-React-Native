@@ -85,7 +85,13 @@ const Notification = ({ navigation }: any) => {
     <EmptyComponent message="Không có thông báo nào" />
   );
 
-  const handleItemClick = (itemId: string) => ({});
+  const handleItemClick = (item: NotificationModel) => {
+    if (item.data.post) {
+      navigation.navigate("PostDetail", {
+        postId: item.data.post._id
+      });
+    }
+  };
 
   const handleReadAll = async () => {
     setShowMenu(false);
